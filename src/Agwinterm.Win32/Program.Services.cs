@@ -1403,7 +1403,8 @@ internal partial class Program
     private static HashSet<string> LoadDenylist()
     {
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            { "powershell", "pwsh", "cmd", "conhost", "wsl", "ssh", "bash", "oh-my-posh", "git", "windowsterminal" };
+            // Local hotfix for #352: "wsl" dropped so a wsl-wrapped launcher can be captured.
+            { "powershell", "pwsh", "cmd", "conhost", "ssh", "bash", "oh-my-posh", "git", "windowsterminal" };
         try
         {
             string path = DenylistPath;
@@ -1413,7 +1414,7 @@ internal partial class Program
                 File.WriteAllText(path,
                     "# agwinterm restore-denylist: process/exe names (no extension) NOT re-run on restart.\n" +
                     "# One per line; '#' starts a comment. Defaults cover shells and prompt helpers.\n" +
-                    "powershell\npwsh\ncmd\nconhost\nwsl\nssh\nbash\noh-my-posh\ngit\nWindowsTerminal\n");
+                    "powershell\npwsh\ncmd\nconhost\nssh\nbash\noh-my-posh\ngit\nWindowsTerminal\n");
             }
             foreach (var raw in File.ReadAllLines(path))
             {
