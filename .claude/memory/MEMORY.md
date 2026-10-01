@@ -1,0 +1,5 @@
+- [agwinterm is a third-party repo](agwinterm-is-third-party.md) — yeroo's project, not the user's; file issues upstream, and keep changes to his files on `local`
+- [Where the docs actually live](agwinterm-docs-map.md) — the config/keymap/API references are C# string constants in source; `docs/` mixes user guides with dev archaeology
+- [Docs that disagree with the code](agwinterm-doc-gaps.md) — stale skill key list, Settings covers ~half the config, not everything is rebindable
+- [A patched fork, built locally](agwinterm-fork-and-build.md) — origin is the user's fork and upstream is yeroo; three patches on `local`, built by the gitignored `scripts/deploy.sh`
+- [agwintermctl gotchas](agwinterm-control-api-gotchas.md) — `session type` submits only on CR; a `wsl`- or `ssh`-wrapped process can never name its own pane

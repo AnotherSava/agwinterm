@@ -1,0 +1,7 @@
+---
+created: 2026-09-30 23:55
+---
+
+# Drop the local wsl restore-denylist patch once yeroo/agwinterm#352 ships
+
+Track yeroo/agwinterm#352 (restore-commands never re-runs a wrapped command). **Why we need it:** every pane here starts Claude through `wsl.exe -d Ubuntu -- …/remote-session/wsl/start-here.sh`, and `wsl` sits in the denylist `LoadDenylist` seeds in code, so the quit-time capture records null for each pane and nothing restores on restart. `restore-denylist.conf` cannot fix it — the file only `set.Add`s onto that seed. Per-pane `agwintermctl session restore` pins do work but must be redone for every new pane, which is what made this a bug rather than a preference. **Carried locally meanwhile:** the `fix(restore): drop wsl from the command denylist` commit on the `local` branch patches `src/Agwinterm.Win32/Program.Services.cs` to drop `"wsl"` from the `LoadDenylist` seed *and* from the starter text it writes, plus the `wsl` line deleted from `%LOCALAPPDATA%\agwinterm\restore-denylist.conf` (needed because the file already existed with it). **Next steps once upstream ships a fix:** drop that commit while rebasing `local` onto `upstream/main`, rebuild with `bash scripts/deploy.sh`, then verify with no pins at all — `agwintermctl tree` showing zero `restoreCommands` and `tmux ls` showing every `cc-*` session attached after a restart. If upstream instead makes the file authoritative (proposal 1 in the issue), the conf edit stays and only the source patch is dropped.
