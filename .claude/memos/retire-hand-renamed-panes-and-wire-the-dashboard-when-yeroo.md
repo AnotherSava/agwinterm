@@ -1,0 +1,7 @@
+---
+created: 2026-09-30 23:55
+---
+
+# Retire hand-renamed panes and wire the dashboard when yeroo/agwinterm#353 ships
+
+Track yeroo/agwinterm#353 (session label should fall back to the cwd basename like agterm's `displayName`; `tree` should report a per-pane cwd). **Why we need it:** sidebar rows read `session 1/2/3` where agterm shows the project folder, and the Claude Code Dashboard — which keys its rows by project directory and does title tabs in Windows Terminal and agterm — cannot address an agwinterm session at all. `--target` defaults to `AGWINTERM_SESSION_ID`, which never reaches `claude.exe` under the remote-session tmux holder (measured ancestry: `claude.exe <- wsl.exe <- wsl.exe <- pythonw.exe <- Task Scheduler`), and `tree` carries no cwd to match a project against. agwinterm already records the right value per pane — the persisted `Panes[0].Cwd` reads each pane's own project directory — this clone, the dotfiles repo and the dashboard repo — in Windows form, correct despite the wrapper. **Next steps:** if the label half ships, nothing to do here — rows self-label and renaming stops being needed; if the `tree` cwd ships, tell the tauri-dashboard session so it can resolve a pane and drive `agwintermctl session status`, whose coloured dot and title-bar bell have no equivalent inside a name. Its side additionally needs a `terminals::TerminalAdapter` method plus Windows terminal detection (`for_platform` assumes Windows Terminal today) — raised there, not promised.
