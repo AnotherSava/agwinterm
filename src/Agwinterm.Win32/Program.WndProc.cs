@@ -638,6 +638,11 @@ internal partial class Program
                         var p = under.pane;
                         if (p.S.Emulator.MouseReporting)
                         {
+                            // Local patch: the app is about to scroll because we asked it to, so a
+                            // selection pinned to these cells would come to highlight text it never
+                            // covered. Unlike app output this cannot fire unprompted, so dropping it
+                            // here does not reopen the mid-drag regression ReconcileSel describes.
+                            if (p.HasSel) { p.ClearSel(); RequestRedraw(); }
                             SendMouseTo(p, (under.ox, under.oy, under.cw, under.ch),
                                 HiWord(wParam) > 0 ? 64 : 65, pt.x, pt.y, deviceX, deviceY, true);
                             return IntPtr.Zero;
