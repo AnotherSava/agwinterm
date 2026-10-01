@@ -478,8 +478,10 @@ internal partial class Program
                     if (KeyDown(VK_CONTROL) && _linkUrl is { } lurl) { OpenLink(lurl); return IntPtr.Zero; }
                     bool shiftDn = KeyDown(VK_SHIFT);
                     var em0 = _session?.Emulator;
-                    if (em0 is not null && em0.MouseReporting && !shiftDn) { SendMousePx(0, lParam, true); SetCapture(hwnd); return IntPtr.Zero; }
-                    // Text selection (app not grabbing the mouse, or Shift held to override).
+                    // Local patch: forward a press only when the app tracks motion (1002/1003). One that
+                    // asked for 1000 alone keeps its wheel but leaves the drag to the terminal.
+                    if (em0 is not null && em0.MouseReportsMotion && !shiftDn) { SendMousePx(0, lParam, true); SetCapture(hwnd); return IntPtr.Zero; }
+                    // Text selection (app not tracking motion, or Shift held to override).
                     if (PaneAt(mx, my) is { } h0)
                     {
                         var (line, col) = CellAtPx(h0.pane, h0.ox, h0.oy, h0.cw, h0.ch, mx, my);
