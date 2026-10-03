@@ -220,6 +220,11 @@ internal partial class Program
                         PaneOverlays: s.Panes.Select((p, i) => (p, i)).Where(t => t.p.Overlay.Term is not null)
                                              .Select(t => OverlayPanes.Word(t.i)).ToList(), Hud: s.Hud,
                         ForegroundShells: s.Panes.Select(p => p.S.HasExited ? null : shells.GetValueOrDefault(p)).ToList(),
+                        // Each pane's own directory, read from the pane rather than from whatever it
+                        // launched: a `wsl.exe` or `ssh` wrapper hides the project from everything
+                        // running inside it, and this value stays right anyway. No process query —
+                        // the live OSC 7 cwd and the launch dir are both already in hand.
+                        PaneCwds: s.Panes.Select(PaneCwd).ToList(),
                         // The program title, reported even when a custom name hides it in the chrome:
                         // a caller tracking what a user left needs what the session IS, not what some
                         // other tool called it.

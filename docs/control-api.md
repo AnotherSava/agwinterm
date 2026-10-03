@@ -140,6 +140,26 @@ aggregate does not move it, but panes tied at the winning status all do. Two `ac
 the freshest of the two, so the session-level age cannot tell a dead hook from a live one beside it
 (nothing reports the stamp per pane).
 
+## `paneCwds` in `tree --json`
+
+A tool outside agwinterm has no other way to tell which pane holds which project. agwinterm puts
+`AGWINTERM_SESSION_ID` into the environment of the process it starts, so a pane running
+`wsl.exe -d Ubuntu -- launcher.sh` or `ssh <host> <command>` launches the real program in an
+environment that never received it, and nothing running there can name its own pane. agwinterm reads
+the directory off the pane rather than off the process, so it stays right behind such a wrapper.
+
+Each session node carries `paneCwds`, an object keyed by pane id giving that pane's working
+directory: the live OSC 7 cwd when the shell reports one, else the directory the pane was launched
+in. A pane whose directory is unknown is absent, and a session where no pane's is known omits the key
+— the same spelling `restoreCommands` and `capturedCommands` use for "none".
+
+Keying it by pane id rather than listing it in pane order like `foregroundShells` is what makes a
+one-pane session answerable: the tree emits `paneIds` only while a session is split, so an array would
+give back a directory attached to no id you can pass to `--target`.
+
+Leave `shell-integration` off and the shell reports no OSC 7, so the value is the launch directory and
+a later `cd` does not move it. That is the same reading the title bar's cwd fallback uses.
+
 ## `version`
 
 Prints two greppable lines: the `cli` that ran (version and its resolved path — several

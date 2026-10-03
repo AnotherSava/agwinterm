@@ -209,6 +209,32 @@ or the tie-break stops preferring the most recent.
 
 ---
 
+## A pane's directory survives a wrapper the unit tests cannot have
+
+**Guards:** the unit suite reports `paneCwds` out of a fake's dictionary, so it proves the wire shape
+and nothing about where the value comes from. The one claim that matters here — that the directory is
+read off the pane and not off whatever the pane launched — only holds against a real shell, and it is
+the whole reason an outside tool can use it: a pane running a `wsl.exe` or `ssh` wrapper gives the
+program inside no way to name its own pane.
+
+**Setup:** a session launched in a known directory, and a second one launched in a different known
+directory whose pane runs `wsl.exe -d <distro> -- <script>` rather than a shell.
+
+**Steps:**
+1. Read both session nodes.
+2. Split the first session, launch the new pane in a third directory, and re-read.
+
+**Expect:** each `paneCwds` entry is keyed by that pane's id and holds its own launch directory, in
+Windows form, including the wrapped pane — whose wrapper and script appear nowhere in the value. The
+split session reports two entries, one per pane, with different directories. With
+`shell-integration` off, a `cd` inside a pane does not move its entry; with it on, the entry follows.
+
+**Fails when:** the value is taken from the session rather than the pane (a split then reports one
+directory twice), or from the foreground process rather than the pane's shell (the wrapped pane then
+reports the wrapper's directory or nothing).
+
+---
+
 ## `version` names the binary that ran and the app it reached
 
 **Guards:** three `agwintermctl.exe` live on this machine — the install directory and two source
