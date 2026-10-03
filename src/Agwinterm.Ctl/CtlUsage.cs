@@ -53,6 +53,8 @@ public static class CtlUsage
           agwintermctl session resize [--split-ratio R] [--grow-left N|--grow-right N|--grow-top N|--grow-bottom N]
               (left/right move a vertical split's divider by N columns, top/bottom a horizontal one's by N rows;
               the other axis's flags are refused, and the divider does not move)
+          agwintermctl session rename --clear [--target ID]     (drop the custom name; the row falls back to the
+              session's program title, else `session N`. A name beside --clear is refused; replies {session,name:null})
           agwintermctl session context <text...> [--target ID]   (one line of "what is this pane for", shown dimmed
               beside the name and read back in `tree --json` as context; survives a restart. Blank, a control
               character or more than 200 characters is refused; replies {session,context})
