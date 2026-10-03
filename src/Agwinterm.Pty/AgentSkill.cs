@@ -74,6 +74,12 @@ public static class AgentSkill
           `active` report the freshest of the two: the session-level age cannot tell a dead hook
           from a live one beside it, and no verb reports the stamp per pane. Always present, even
           for an idle session that never set one)
+          `paneCwds` = each pane's working directory, an object keyed by pane id — the live OSC 7 cwd when the
+          shell reports one, else the dir the pane was launched in; a pane whose dir is unknown is absent and a
+          session with none omits the key. Read off the PANE, so it survives a `wsl.exe`/`ssh` wrapper that
+          hides the project from everything running inside it: this is how a tool outside agwinterm matches a
+          pane to a project when nothing in the pane can name its own pane. Keyed by id rather than in pane
+          order (like `foregroundShells`) because `paneIds` is emitted only while a session is split.
         - `agwintermctl events [--since CURSOR] [--limit N]`      — poll the event log (status/notification/session/tree changes); returns {cursor, events:[{seq,type,session,info}]}. Pass the returned cursor as --since next poll.
         - `agwintermctl session new [--name N] [--cwd DIR] [--workspace ID|--workspace-name NAME [--create-workspace]] [--command "PowerShell code"] [--command-mode powershell|direct] [--profile NAME] [--no-select] [--wait]`
           `--no-select` creates the session in the background without stealing focus or changing the current selection.

@@ -13,7 +13,10 @@ namespace Agwinterm.Pty;
 /// the session's split orientation, one of <see cref="SplitAxes"/>' words (null = vertical), emitted
 /// by the tree only while the session is split (P4); <see cref="PaneOverlays"/> is the open PANE
 /// overlay slots as <see cref="OverlayPanes"/>' words in pane order (empty = none; the tree omits the
-/// key), independent of <see cref="Overlay"/>, the session-wide slot (P5); <see cref="Title"/> is
+/// key), independent of <see cref="Overlay"/>, the session-wide slot (P5); <see cref="PaneCwds"/>
+/// is each pane's working directory ("" = unknown), parallel to <see cref="PaneIds"/> like
+/// <see cref="RestoreCommands"/>, so an outside tool can tell which pane sits in which project;
+/// <see cref="Title"/> is
 /// the focused pane's PROGRAM title (an OSC 0/2 string, null = none), reported whether or not a
 /// custom name hides it in the chrome. New optional fields go at the END: both hosts and
 /// <see cref="SingleSessionHost"/> construct this positionally.</summary>
@@ -24,7 +27,8 @@ public sealed record SessionSnapshot(string Id, string Name, bool Active, AgentS
     IReadOnlyList<string>? RestoreCommands = null, long StatusChangedAt = 0,
     string? Context = null, IReadOnlyList<string>? CapturedCommands = null,
     string? Axis = null, IReadOnlyList<string>? PaneOverlays = null, HudSpec? Hud = null,
-    IReadOnlyList<string?>? ForegroundShells = null, string? Title = null);
+    IReadOnlyList<string?>? ForegroundShells = null, IReadOnlyList<string>? PaneCwds = null,
+    string? Title = null);
 
 /// <summary>A workspace (with its sessions) for the control-API tree.</summary>
 public sealed record WorkspaceSnapshot(string Id, string Name, bool Active, IReadOnlyList<SessionSnapshot> Sessions, bool Collapsed = false);

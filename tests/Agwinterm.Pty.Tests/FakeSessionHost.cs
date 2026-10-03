@@ -57,6 +57,11 @@ internal sealed class FakeSessionHost : ISessionHost
         /// app writes null), read back through the tree's <c>capturedCommands</c>, so a refused call is
         /// asserted to have left it untouched.</summary>
         public readonly Dictionary<string, string> Captured = new();
+        /// <summary>Each pane's working directory, keyed by pane id — the fake's stand-in for the app's
+        /// PaneCwd(Pane), which resolves a live OSC 7 cwd and falls back to the launch dir. A test
+        /// seeds it; the tree's <c>paneCwds</c> is built from here. A pane absent here has an unknown
+        /// directory, which the app spells "" and the tree omits.</summary>
+        public readonly Dictionary<string, string> Cwds = new();
         /// <summary>Whether <see cref="Name"/> came from a rename, so the reply can say null after a
         /// clear the way the app's CustomName does. The app keeps two fields; the fake keeps one and a flag.</summary>
         public bool Custom;
@@ -150,7 +155,7 @@ internal sealed class FakeSessionHost : ISessionHost
         public void RemovePane(int index)
         {
             string gone = PaneIds[index];
-            RestorePins.Remove(gone); Captured.Remove(gone); Foreground.Remove(gone);
+            RestorePins.Remove(gone); Captured.Remove(gone); Foreground.Remove(gone); Cwds.Remove(gone);
             // The pane overlay dies with its pane (P5): the app's ClosePane disposes Pane.Overlay too.
             if (PaneOverlays.Remove(gone, out var slot)) ClosePaneOverlay(slot);
             Panes.RemoveAt(index); PaneIds.RemoveAt(index); PaneCount = Panes.Count;
@@ -330,6 +335,7 @@ internal sealed class FakeSessionHost : ISessionHost
                 CapturedCommands: s.PaneIds.Select(id => s.Captured.TryGetValue(id, out var c) ? c : "").ToList(),   // the slot, "" = none, parallel to PaneIds
                 Axis: s.Axis,
                 PaneOverlays: s.PaneOverlayWords(), Hud: s.Hud, ForegroundShells: s.ForegroundShells,
+                PaneCwds: s.PaneIds.Select(id => s.Cwds.TryGetValue(id, out var cwd) ? cwd : "").ToList(),
                 Title: s.Title);
         }).ToList(), Collapsed: w.Collapsed)).ToList();
 

@@ -548,6 +548,12 @@ public sealed class ControlServer : IDisposable
                 // capturedCommands: the restore.capture read-back, same spelling — emitted only when
                 // any pane's slot holds a capture (P3).
                 AppendPaneMap(sb, RestoreCaptureReply.TreeKey, n.CapturedCommands, n.PaneIds);
+                // paneCwds: each pane's working directory, same spelling. Keyed by pane id and not an
+                // array in pane order, because `paneIds` is emitted only while a session is split, so
+                // an array would leave a one-pane session's directory attached to no addressable id —
+                // and the id is the point: this is how a tool outside agwinterm tells which pane holds
+                // which project, when nothing inside the pane can say.
+                AppendPaneMap(sb, "paneCwds", n.PaneCwds, n.PaneIds);
                 if (n.PaneCount > 1)
                 {
                     sb.Append(",\"paneCount\":").Append(n.PaneCount).Append(",\"focusedPane\":").Append(n.FocusedPane);
@@ -591,7 +597,8 @@ public sealed class ControlServer : IDisposable
 
     /// <summary>
     /// A per-pane read-back map — <c>restoreCommands</c> for session.restore, <c>capturedCommands</c>
-    /// for restore.capture (P3): an object keyed by PANE id (the id the verb's reply names) listing
+    /// for restore.capture (P3), <c>paneCwds</c> for each pane's directory, and whatever comes next:
+    /// an object keyed by PANE id (the id a verb's reply names) listing
     /// only the panes that carry a value. Omitted when no pane does, and a pane with none is simply
     /// absent — the same spelling the flags above use for "no". The snapshot carries one entry per
     /// pane ("" = none), parallel to PaneIds. AgentSkill promised <c>restoreCommands</c> long before
