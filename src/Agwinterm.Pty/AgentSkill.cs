@@ -36,7 +36,11 @@ public static class AgentSkill
           terminal it is refused `no session matches that target` (the quick terminal belongs to no session).
         - `AGWINTERM_PANE_ID` — explicit pane identity (same value; use when you specifically mean the pane).
         - `AGWINTERM_WINDOW_ID` — your window id.
-        - `AGWINTERM_PIPE` — the control pipe name (full path `\\.\pipe\<name>`).
+        - `AGWINTERM_PIPE` — the control pipe's BARE name (default `agwinterm`), not a path: hand it
+          straight to a named-pipe client, as the PowerShell snippet at the end of this skill does.
+          Treating it as a path fails; prefix it with `\\.\pipe\` only for a CreateFile-style API, which
+          gives `\\.\pipe\agwinterm`.
+          `version --json` reports both forms, as `pipe` and `pipePath`.
 
         ## Report your status (do this — it is the point)
         Let the user see your state at a glance:
