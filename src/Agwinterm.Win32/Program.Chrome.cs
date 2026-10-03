@@ -102,7 +102,7 @@ internal partial class Program
             if (!ReferenceEquals(_editing, ws)) // the rename box covers the name while editing
             {
                 // Clip + ellipsis so a long workspace name (or enlarged font) stops before the session count.
-                rt.DrawText(ws.Name, _sidebarFont, new Rect(24f, y, _sidebarW - 56f, rowH), brush, DrawTextOptions.Clip);
+                rt.DrawText(ws.Name, _sidebarFont, new Rect(24f, y, _sidebarW - 56f, rowH), brush, AuthoredTextClipped);
                 RecordSidebarName(ws, ws.Name, 24f, y, _sidebarW - 56f, rowH);
             }
             rt.DrawText(sessions.Count.ToString(), _sidebarSmall, new Rect(_sidebarW - 28f, y, 22f, rowH), brush);
@@ -197,7 +197,7 @@ internal partial class Program
             if (badgeText is not null) nameRight = MathF.Min(nameRight, badgeX - 5f);
             float nameAvail = MathF.Max(0f, nameRight - nameX);
             // Clip + ellipsis-trim so a long name (or an enlarged sidebar font) never spills over the dot.
-            rt.DrawText(s.Name, _sidebarFont, new Rect(nameX, y, nameAvail, rowH), brush, DrawTextOptions.Clip);
+            rt.DrawText(s.Name, _sidebarFont, new Rect(nameX, y, nameAvail, rowH), brush, AuthoredTextClipped);
             RecordSidebarName(s, s.Name, nameX, y, nameAvail, rowH);
             // session.context (P3): a dimmer, smaller suffix after the name in the SAME row, clipped to
             // the name rect. The name keeps its full width and the context takes what is left; it is
@@ -211,7 +211,7 @@ internal partial class Program
                 if (ctxW >= 16f)
                 {
                     brush.Color = isDrag ? brush.Color : WithA(SbDimText, active ? 0.9f : 0.7f);
-                    rt.DrawText(ctx, _sidebarCtx, new Rect(ctxX, y, ctxW, rowH), brush, DrawTextOptions.Clip);
+                    rt.DrawText(ctx, _sidebarCtx, new Rect(ctxX, y, ctxW, rowH), brush, AuthoredTextClipped);
                 }
             }
         }
@@ -603,7 +603,7 @@ internal partial class Program
         if (label.Length > 0)
         {
             brush.Color = new Color4(1f, 1f, 1f, 0.92f);
-            rt.DrawText(label, _sidebarFont, new Rect(24f, _dragY - 9f, _sidebarW - 32f, 20f), brush);
+            rt.DrawText(label, _sidebarFont, new Rect(24f, _dragY - 9f, _sidebarW - 32f, 20f), brush, AuthoredText);
         }
     }
 
@@ -1239,8 +1239,8 @@ internal partial class Program
             bool hasSub = it.Secondary.Length > 0;
             brush.Color = it.Run is null || it.Enabled?.Invoke() == false ? ChromeDim : (idx == _palSel ? SbActiveText : ChromeText);
             float lw = pw - (tx - px) - (it.Hint.Length > 0 ? 80f : 20f);
-            rt.DrawText(it.Label, _uiFont, new Rect(tx, ry + (hasSub ? 3f : 0f), lw, hasSub ? 20f : rowH), brush, DrawTextOptions.Clip);
-            if (hasSub) { brush.Color = ChromeDim; rt.DrawText(it.Secondary, _uiSmall, new Rect(tx, ry + 20f, pw - (tx - px) - 20f, 16f), brush, DrawTextOptions.Clip); }
+            rt.DrawText(it.Label, _uiFont, new Rect(tx, ry + (hasSub ? 3f : 0f), lw, hasSub ? 20f : rowH), brush, AuthoredTextClipped);
+            if (hasSub) { brush.Color = ChromeDim; rt.DrawText(it.Secondary, _uiSmall, new Rect(tx, ry + 20f, pw - (tx - px) - 20f, 16f), brush, AuthoredTextClipped); }
             if (it.Hint.Length > 0) { brush.Color = ChromeDim; float hw = MeasureText(it.Hint, _uiSmall); rt.DrawText(it.Hint, _uiSmall, new Rect(px + pw - 16f - hw, ry + (rowH - 16f) / 2f, hw + 2f, 16f), brush); }
             _palRows.Add((ry, ry + rowH, idx));
         }

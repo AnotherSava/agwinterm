@@ -712,10 +712,10 @@ internal partial class Program
             brush.Color = StatusDot(AggStatus(s));
             rt.FillEllipse(new Ellipse(new System.Numerics.Vector2(px + 18f, ry + rowH / 2f), 4.5f, 4.5f), brush);
             brush.Color = i == _mruIdx ? SbActiveText : ChromeText;
-            rt.DrawText(s.Name, _uiFont, new Rect(px + 32f, ry + (rowH - 20f) / 2f, pw - 150f, 20f), brush);
+            rt.DrawText(s.Name, _uiFont, new Rect(px + 32f, ry + (rowH - 20f) / 2f, pw - 150f, 20f), brush, AuthoredText);
             brush.Color = ChromeDim;
             float wsw = MeasureText(s.Ws.Name, _uiSmall);
-            rt.DrawText(s.Ws.Name, _uiSmall, new Rect(px + pw - 16f - wsw, ry + (rowH - 16f) / 2f, wsw + 2f, 16f), brush);
+            rt.DrawText(s.Ws.Name, _uiSmall, new Rect(px + pw - 16f - wsw, ry + (rowH - 16f) / 2f, wsw + 2f, 16f), brush, AuthoredText);
         }
     }
 

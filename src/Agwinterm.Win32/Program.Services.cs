@@ -367,7 +367,7 @@ internal partial class Program
         }
         float titleW = MathF.Max(30f, MathF.Min(titleMeasured, titleShare - ctxReserve));
         brush.Color = ChromeText;
-        rt.DrawText(title, _uiTitle, new Rect(titleX, 0f, titleW, TitleBarH), brush);  // one vertically-centered, ellipsized row
+        rt.DrawText(title, _uiTitle, new Rect(titleX, 0f, titleW, TitleBarH), brush, AuthoredText);  // one vertically-centered, ellipsized row
         _titleTextRect = new Rect(titleX, 0f, titleW, TitleBarH);   // File ▸ Rename Window… puts its field here
         float runEnd = titleX + titleW;   // right edge of the title run (title, pills, then the context suffix when set)
         float pillX = runEnd + 10f;       // anchored on the title alone — never on the context
@@ -389,7 +389,7 @@ internal partial class Program
             if (ctxW >= 20f)   // nothing drawn when the title (and pills) fill the budget — the palette line carries the long form
             {
                 brush.Color = ChromeDim;
-                rt.DrawText(ctx, _uiSmallTrim, new Rect(runEnd + ctxGap, 0f, ctxW, TitleBarH), brush, DrawTextOptions.Clip);
+                rt.DrawText(ctx, _uiSmallTrim, new Rect(runEnd + ctxGap, 0f, ctxW, TitleBarH), brush, AuthoredTextClipped);
                 runEnd += ctxGap + ctxW;
             }
         }

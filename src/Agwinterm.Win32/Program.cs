@@ -310,6 +310,21 @@ internal partial class Program : ISessionHost, IWindowHost
     private static IDWriteTextFormat _iconFont = null!;
     private static IDWriteTextFormat _iconSmall = null!;   // small Fluent glyphs (e.g. the row flag marker)
 
+    /// <summary>Draw options for chrome text holding a string somebody else authored — a session name, a
+    /// workspace name, a session's <c>session context</c> line. Those carry arbitrary code points, and a
+    /// colour font (Segoe UI Emoji) needs <see cref="DrawTextOptions.EnableColorFont"/> or Direct2D draws
+    /// its glyphs as a flat outline in the brush colour: an emoji in a session name arrives grey, while
+    /// the same code point in a Windows Terminal tab is in colour. Every site drawing one of those three
+    /// strings uses this — including a shared site such as the palette row, which draws an authored name
+    /// and an app-supplied action label through one call. The flag costs nothing on text with no colour
+    /// glyph in it. Chrome's own labels drawn on their own — a pill, a menu row, a keyboard hint — stay
+    /// on the bare options. Nothing enforces the set: a new site that draws one of those three strings
+    /// and reaches for <see cref="DrawTextOptions.Clip"/> instead will render grey, and only the eye
+    /// catches it.</summary>
+    private const DrawTextOptions AuthoredText = DrawTextOptions.EnableColorFont;
+    /// <summary><see cref="AuthoredText"/> where the site also clips to its rect.</summary>
+    private const DrawTextOptions AuthoredTextClipped = AuthoredText | DrawTextOptions.Clip;
+
     /// <summary>One terminal surface within a session. A session is a row of panes along its
     /// <see cref="Ses.Axis"/>: left→right when vertical, top→bottom when horizontal.</summary>
     private sealed class Pane
