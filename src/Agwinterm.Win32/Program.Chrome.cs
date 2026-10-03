@@ -197,8 +197,12 @@ internal partial class Program
             if (badgeText is not null) nameRight = MathF.Min(nameRight, badgeX - 5f);
             float nameAvail = MathF.Max(0f, nameRight - nameX);
             // Clip + ellipsis-trim so a long name (or an enlarged sidebar font) never spills over the dot.
-            rt.DrawText(s.Name, _sidebarFont, new Rect(nameX, y, nameAvail, rowH), brush, AuthoredTextClipped);
-            RecordSidebarName(s, s.Name, nameX, y, nameAvail, rowH);
+            // The row follows the program, not just a stored name: DisplayName is custom name -> the
+            // focused pane's OSC title -> its cwd basename -> Ses.Name, so a shell that titles itself,
+            // or merely sits in a project, labels its own row.
+            string label = DisplayName(s);
+            rt.DrawText(label, _sidebarFont, new Rect(nameX, y, nameAvail, rowH), brush, AuthoredTextClipped);
+            RecordSidebarName(s, label, nameX, y, nameAvail, rowH);
             // session.context (P3): a dimmer, smaller suffix after the name in the SAME row, clipped to
             // the name rect. The name keeps its full width and the context takes what is left; it is
             // never a second line and never changes rowH — DrawSidebar computes ONE rowH per paint and
@@ -206,7 +210,7 @@ internal partial class Program
             // The palette's Secondary line is where the long form lives.
             if (s.Context is string ctx && ctx.Length > 0)
             {
-                float nameW = MathF.Min(MeasureText(s.Name, _sidebarFont), nameAvail);
+                float nameW = MathF.Min(MeasureText(label, _sidebarFont), nameAvail);
                 float ctxX = nameX + nameW + 6f, ctxW = nameAvail - nameW - 6f;
                 if (ctxW >= 16f)
                 {
@@ -362,7 +366,9 @@ internal partial class Program
         float ry0 = -1, ry1 = -1;
         foreach (var (y0, y1, _, it) in _sidebarRows) if (ReferenceEquals(it, item)) { ry0 = y0; ry1 = y1; break; }
         if (ry0 < 0) { RequestRedraw(); return; } // row not currently visible
-        string name = item is Ses s ? s.Name : ((Workspace)item).Name;
+        // Seeded with what the ROW shows, not the stored name: F2 edits the text under the cursor, and a
+        // row following its program is otherwise renamed from a `session N` nobody can see.
+        string name = item is Ses s ? DisplayName(s) : ((Workspace)item).Name;
         EnsureEditGdi();
         // Fill the whole row (matches the highlight band); a left text-margin puts the text exactly
         // where the row name is drawn, so nothing shifts when editing starts.
@@ -599,7 +605,7 @@ internal partial class Program
             brush.Color = new Color4(0.30f, 0.60f, 0.98f, 1f);
             rt.FillRectangle(new Rect(0, lineY - 1f, _sidebarW, 2f), brush);
         }
-        string label = _dragItem is Ses s ? s.Name : _dragItem is Workspace w ? w.Name : "";
+        string label = _dragItem is Ses s ? DisplayName(s) : _dragItem is Workspace w ? w.Name : "";
         if (label.Length > 0)
         {
             brush.Color = new Color4(1f, 1f, 1f, 0.92f);
@@ -816,7 +822,7 @@ internal partial class Program
                         if (ctx.Length > 0) secondary = $"{ctx}  ·  {secondary}";
                         _palAll.Add(new PalItem
                         {
-                            Label = sx.Name,
+                            Label = DisplayName(sx),
                             Secondary = secondary,
                             Search = ctx.Length > 0 ? $"{sx.Name} {ctx} {sx.Ws.Name} {cwd}" : $"{sx.Name} {sx.Ws.Name} {cwd}",
                             Dot = AggStatus(sx),
@@ -1098,7 +1104,7 @@ internal partial class Program
                         var sx = s;
                         _palAll.Add(new PalItem
                         {
-                            Label = sx.Name,
+                            Label = DisplayName(sx),
                             Secondary = $"{sx.Ws.Name}  ·  {AggStatus(sx).ToString().ToLowerInvariant()}",
                             Search = $"{sx.Name} {sx.Ws.Name}",
                             Dot = AggStatus(sx),
@@ -1620,7 +1626,7 @@ internal partial class Program
             var sx = s;
             items.Add(new PalItem
             {
-                Label = sx.Name,
+                Label = DisplayName(sx),
                 Secondary = $"{sx.Ws.Name}  ·  {AggStatus(sx).ToString().ToLowerInvariant()}",
                 Dot = AggStatus(sx),
                 Run = () => { lock (_workspaces) sx.Ws.Expanded = true; SetActive(sx); },
@@ -1644,7 +1650,7 @@ internal partial class Program
             var st = AggStatus(sx);
             items.Add(new PalItem
             {
-                Label = ReferenceEquals(sx, _active) ? sx.Name + "  (current)" : sx.Name,
+                Label = ReferenceEquals(sx, _active) ? DisplayName(sx) + "  (current)" : DisplayName(sx),
                 Secondary = sx.Ws.Name,
                 Dot = st == AgentStatus.Idle ? null : st,
                 Run = () => { lock (_workspaces) sx.Ws.Expanded = true; SetActive(sx); },

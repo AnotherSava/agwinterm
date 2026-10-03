@@ -109,7 +109,16 @@ public static class AgentSkill
           has no label of its own — the sidebar draws one row per session). Replies `{session, name}` naming the
           session it landed on and the name IN EFFECT, so you can see which one took it; read it back in
           `tree --json` as `name`. A blank name is refused, and so is a target that belongs to no session
-          (the quick terminal).
+          (the quick terminal). `--clear` drops the name again (a name beside it is refused; replies
+          `{session, name:null}`) — after which the row shows the session's PROGRAM title, else `session N`.
+        - **Sessions label themselves.** The display name is the custom name, else the focused pane's OSC 0/2
+          title, else that pane's cwd basename, else `session N` — agterm displayName parity, used by the
+          sidebar row, the palettes, the Ctrl+Tab switcher, the dashboard grid, toasts, UIA and the rename
+          seed. So titling your own pane (`printf '\033]0;...\007'`) labels it everywhere with no rename at
+          all, and nothing has to be cleared afterwards. A shell's default console title (a bare .exe or an
+          absolute path) does not count. `tree --json` carries the title as `title` on the session node,
+          reported even while a custom name hides it; `name` stays the STORED name, since that is what
+          `--target <name>` resolves against.
         - `agwintermctl session context <text> [--target ID]` — ONE LINE of "what is this pane for", shown dimmed after the
           name in the title bar and the sidebar row and on the palette's second line, where the name has to stay short.
           It survives a restart (and `session reopen`), and `tree --json` reads it back as `context` on the session node

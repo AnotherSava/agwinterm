@@ -109,7 +109,7 @@ internal partial class Program
                 titleRight -= 14f;
             }
             brush.Color = sel ? new Color4(1f, 1f, 1f, 1f) : ChromeText;
-            rt.DrawText($"{s.Ws.Name} / {s.Name}", _uiSmall, new Rect(cx + 6f, cy + 1f, titleRight, labelH - 1f), brush, AuthoredTextClipped);
+            rt.DrawText($"{s.Ws.Name} / {DisplayName(s)}", _uiSmall, new Rect(cx + 6f, cy + 1f, titleRight, labelH - 1f), brush, AuthoredTextClipped);
 
             // Live terminal preview, clipped to the cell body
             float tx = cx + 4f, ty = cy + labelH + 2f, tw = MathF.Max(1f, cellW - 8f), th = MathF.Max(1f, cellH - labelH - 6f);
@@ -152,7 +152,7 @@ internal partial class Program
     {
         if (i < 0 || i >= _dashSessions.Count || i == _dashSel) return;
         _dashSel = i;
-        _uia.Announce(_dashSessions[i].Name);
+        _uia.Announce(DisplayName(_dashSessions[i]));
         RequestRedraw();
     }
 

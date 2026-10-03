@@ -1046,7 +1046,7 @@ internal partial class Program : ISessionHost, IWindowHost
                 Kind = Uia.NodeKind.Session,
                 Index = s.UiaIdentity,
                 Name = s.Panes.Count == 1 && s.ActivePane.ProfileExitCode is int exitCode
-                    ? $"{s.Name}, session ended (exit {exitCode})" : s.Name,
+                    ? $"{DisplayName(s)}, session ended (exit {exitCode})" : DisplayName(s),
                 Parent = list,
                 Focused = _chromeFocus && ReferenceEquals(_focusRow, s),
                 Selected = ReferenceEquals(_active, s),
@@ -1246,12 +1246,12 @@ internal partial class Program : ISessionHost, IWindowHost
     private void AnnounceFocusRow()
     {
         if (_focusRow is null) return;
-        ShowToast(_focusRow.Name);   // a visible hint alongside the spoken one
+        ShowToast(DisplayName(_focusRow));   // a visible hint alongside the spoken one — the row's own text
         RaiseUiaFocusForRow();       // move UIA focus to this element (Narrator announces it)
         bool current = ReferenceEquals(_focusRow, _active);
         int unread = UnreadOf(_focusRow);
         string extra = (current ? ", current" : "") + (unread > 0 ? $", {unread} unread" : "");
-        _uia.Announce($"{_focusRow.Name}, session{extra}");
+        _uia.Announce($"{DisplayName(_focusRow)}, session{extra}");
     }
 
     /// <summary>Keyboard handling while the sidebar zone has focus (F6). Up/Down walk sessions, Enter/Space

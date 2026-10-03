@@ -81,6 +81,9 @@ internal sealed class FakeSessionHost : ISessionHost
         /// outlives the term, as the app's does); <see cref="PaneOverlaySlot.Open"/> says whether one is up.
         /// The open term is ALSO in <see cref="CoverPanes"/> under its overlay id, so
         /// <c>--target &lt;overlay id&gt;</c> reaches it through the same resolvers a scratch cover uses.</summary>
+        /// <summary>The focused pane's program title (null = none) — the app reads it off the emulator.
+        /// Read back through the tree's <c>title</c>, and reported whether or not a name hides it.</summary>
+        public string? Title;
         public readonly Dictionary<string, PaneOverlaySlot> PaneOverlays = new();
         /// <summary>The selection each SURFACE holds, keyed by the surface's id — a cover's id or a
         /// real pane's (<see cref="PaneIds"/>) — as the app's lives on its Pane and is read by
@@ -323,7 +326,8 @@ internal sealed class FakeSessionHost : ISessionHost
                 Context: s.Context,
                 CapturedCommands: s.PaneIds.Select(id => s.Captured.TryGetValue(id, out var c) ? c : "").ToList(),   // the slot, "" = none, parallel to PaneIds
                 Axis: s.Axis,
-                PaneOverlays: s.PaneOverlayWords(), Hud: s.Hud, ForegroundShells: s.ForegroundShells);
+                PaneOverlays: s.PaneOverlayWords(), Hud: s.Hud, ForegroundShells: s.ForegroundShells,
+                Title: s.Title);
         }).ToList(), Collapsed: w.Collapsed)).ToList();
 
     public WindowStateSnapshot WindowState() =>

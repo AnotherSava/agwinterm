@@ -1525,7 +1525,7 @@ internal partial class Program
         RequestRedraw();
         EmitEvent("tree");
         if (!ReferenceEquals(pane, ActiveSurface()) || !_windowActive)
-            OnNotified(pane, "Session ended", $"{ses.Name} exited with code {exitCode}.",
+            OnNotified(pane, "Session ended", $"{DisplayName(ses)} exited with code {exitCode}.",
                 exitCode == 0 ? NotificationCategory.Ok : NotificationCategory.Attention);
     }
 

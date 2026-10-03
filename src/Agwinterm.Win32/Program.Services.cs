@@ -237,17 +237,70 @@ internal partial class Program
         return string.IsNullOrWhiteSpace(start) ? Environment.CurrentDirectory : start!;
     }
 
+    /// <summary>A pane's PROGRAM title — the string an OSC 0/2 set — or null when it has none worth
+    /// showing. The shell's default console title is not one: on Windows it is the bare exe path
+    /// (…\powershell.exe) or an absolute path, which is noise in a label. Also what <c>tree</c> reports
+    /// as <c>title</c>, so a caller reads back exactly what the chrome would draw.</summary>
+    private static string? MeaningfulOscTitle(Pane p)
+    {
+        string osc = p.S.Emulator.Title;   // read unlocked, as the title bar always has: a reference assignment
+        if (string.IsNullOrWhiteSpace(osc)) return null;
+        if (osc.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)) return null;
+        if (osc.Length >= 2 && osc[1] == ':' && osc.Contains('\\')) return null;   // a bare C:\… path
+        return osc;
+    }
+
+    /// <summary>What a session is called, as far as the title bar and the sidebar row agree: a custom
+    /// name, else the FOCUSED pane's program title. Null when it has neither — which is the one place
+    /// the two surfaces part company, the title bar falling back to the cwd and the row to
+    /// <see cref="Ses.Name"/>. Shared so a rename or a program's title cannot show in one and not the
+    /// other.</summary>
+    private static string? SessionLabel(Ses s)
+        => !string.IsNullOrWhiteSpace(s.CustomName) ? s.CustomName! : MeaningfulOscTitle(s.ActivePane);
+
+    /// <summary>The basename agterm's <c>displayName</c> ends on, with its pins: a root keeps its own
+    /// spelling (<c>/</c>, <c>C:\</c>), a trailing separator is ignored (<c>/a/b/</c> → <c>b</c>), and an
+    /// empty path gives nothing. Not <see cref="Path.GetFileName"/>, which answers "" at a drive root and
+    /// would leave a row blank there.</summary>
+    private static string? CwdBasename(string? cwd)
+    {
+        if (string.IsNullOrWhiteSpace(cwd)) return null;
+        string s = cwd!.Replace('/', '\\');
+        string trimmed = s.TrimEnd('\\');
+        if (trimmed.Length == 0) return s[..1];                       // "/" or "\" — the root is its own name
+        if (trimmed.Length == 2 && trimmed[1] == ':') return trimmed;  // "C:" — a drive root, not a blank
+        int slash = trimmed.LastIndexOf('\\');
+        string name = slash < 0 ? trimmed : trimmed[(slash + 1)..];
+        return name.Length == 0 ? null : name;
+    }
+
+    /// <summary>
+    /// What a session is CALLED, everywhere a short label is wanted — the sidebar row, the palettes, the
+    /// switcher, the dashboard grid, a toast, the UIA tree, the drag ghost. agterm's <c>displayName</c>
+    /// order: custom name → the focused pane's program title → the pane's cwd basename → <c>session N</c>.
+    ///
+    /// Its sibling <see cref="SessionDisplayName"/> is the TITLE BAR's, and the two deliberately part on
+    /// the third step: a title bar is wide and shows the whole path, a row is narrow and shows the last
+    /// component. They share the first two through <see cref="SessionLabel"/>, so a rename or a program
+    /// title can never appear in one and not the other.
+    /// </summary>
+    private static string DisplayName(Ses s) => SessionLabel(s) ?? CwdBasename(LabelCwd(s.ActivePane)) ?? s.Name;
+
+    /// <summary>The pane's directory for LABELLING only: the live OSC 7 cwd when the shell reports one,
+    /// else its launch dir. Deliberately not <c>PaneCwd</c>, whose <c>Directory.Exists</c> is right for a
+    /// caller that will USE the path and wrong here — this runs for every sidebar row on every paint, and
+    /// a `\wsl$\…` or a disconnected share would put a filesystem round trip on the UI thread. A label
+    /// naming a directory that has since been deleted is a stale name, not a broken one.</summary>
+    private static string LabelCwd(Pane p)
+    {
+        string live = PrettyCwd(SafeCwd(p));
+        return live.Length > 0 ? live : p.StartCwd ?? "";
+    }
+
     /// <summary>Title-bar display name (agterm precedence): custom name → program OSC title → cwd basename → app name.</summary>
     private static string SessionDisplayName(Ses s)
     {
-        if (!string.IsNullOrWhiteSpace(s.CustomName)) return s.CustomName!;
-        // A program's OSC title (e.g. "claude") — but ignore the shell's default console title,
-        // which on Windows is the bare exe path (…\powershell.exe) or an absolute path (noise).
-        string osc = s.ActivePane.S.Emulator.Title;
-        bool oscMeaningful = !string.IsNullOrWhiteSpace(osc)
-            && !osc.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-            && !(osc.Length >= 2 && osc[1] == ':' && osc.Contains('\\')); // not a bare C:\… path
-        if (oscMeaningful) return osc;
+        if (SessionLabel(s) is { } label) return label;
         // Single-row title = the full current path (agterm-style "just the path"), home collapsed to ~.
         string cwd = PrettyCwd(TitleCwd(s)).TrimEnd('\\', '/');
         string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile).TrimEnd('\\', '/');

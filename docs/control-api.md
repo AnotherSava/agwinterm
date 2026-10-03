@@ -277,6 +277,40 @@ session node, so an agent that sets it when it starts a task leaves a note every
 `session rename <name>` is its neighbour: the short custom name, same target resolution, and the two
 survive each other (renaming does not clear the context).
 
+`session rename --clear` drops the custom name, and the session goes back to following its program —
+the display name below. A name beside `--clear` is refused as two sources for one field, and the reply
+is `{session, name:null}`. Every other per-session write already had a release — `session context
+--clear`, `session status idle`, `session restore none`, `session bind none`, `restore clear` — and a
+rename was the one that could not be undone, so a name set once outlived whatever set it.
+
+A caller detecting support sends `{"cmd":"session.rename","args":{"clear":true}}` and reads the reply:
+this build answers `{session, name:null}`, while a build without the flag refuses with the blank-name
+wording, never having seen the `clear` key. The probe changes nothing either way.
+
+## The display name
+
+A session is labelled by its custom name, else the FOCUSED pane's program title (the string an OSC 0/2
+set), else that pane's cwd basename, else `session N` — agterm's `displayName` precedence. So a shell
+or an agent that titles itself, or one merely sitting in a project directory, labels itself with
+nothing having to call `session rename`.
+
+Every surface showing a short label uses it: the sidebar row, the three palettes, the Ctrl+Tab
+switcher, the dashboard grid, the drag ghost, the focus toast, the UIA tree, and the inline rename's
+seed — so F2 edits the text under the cursor rather than an ordinal nobody can see. The title bar
+differs at the last step only: it is wide, so it shows the whole path where a row shows the last
+component.
+
+A shell's own default console title is not a program title. On Windows it is the bare exe path or an
+absolute path, and a row reading `C:\…\powershell.exe` is worse than the ordinal, so those are ignored
+— the test the title bar has always applied. The basename keeps agterm's pins: a root keeps its
+spelling (`/`, `C:\`), a trailing separator is ignored, and an empty path falls through.
+
+`tree --json` reports the program title as `title` on the session node, **whether or not a custom name
+is hiding it** — a caller that wants to know what a session IS cannot read `name` once something has
+renamed it. Absent when the focused pane has set none. The `name` field keeps reporting the STORED
+name, because that is the handle `--target <name>` resolves against: a derived value there would put a
+string in the tree that nothing can address.
+
 ## `session split` and `session swap`
 
 `session split` answers the **pane id** it produced instead of the word "split", so the shell you just

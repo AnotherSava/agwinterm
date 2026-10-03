@@ -199,6 +199,10 @@ internal partial class Program
                 w.Sessions.Select(s =>
                 {
                     var (status, statusChangedAt) = AggStatusAndAt(s);
+                    // `name` is the STORED name, never DisplayName: it is the handle `--target <name>`
+                    // resolves against, so reporting a derived label would put a string in the tree that
+                    // nothing can address. What the chrome shows is `title` plus this, and a caller that
+                    // wants the row's text composes them the way DisplayName does.
                     return new SessionSnapshot(s.Id, s.Name, ReferenceEquals(s, _active), status,
                         s.Overlay.Term is not null, UnreadOf(s), s.Flagged, s.BgPath is not null,
                         FocusedPane: Math.Clamp(s.Active, 0, Math.Max(0, s.Panes.Count - 1)), PaneCount: s.Panes.Count,
@@ -215,7 +219,11 @@ internal partial class Program
                         // construction. Empty = the server omits the key.
                         PaneOverlays: s.Panes.Select((p, i) => (p, i)).Where(t => t.p.Overlay.Term is not null)
                                              .Select(t => OverlayPanes.Word(t.i)).ToList(), Hud: s.Hud,
-                        ForegroundShells: s.Panes.Select(p => p.S.HasExited ? null : shells.GetValueOrDefault(p)).ToList());
+                        ForegroundShells: s.Panes.Select(p => p.S.HasExited ? null : shells.GetValueOrDefault(p)).ToList(),
+                        // The program title, reported even when a custom name hides it in the chrome:
+                        // a caller tracking what a user left needs what the session IS, not what some
+                        // other tool called it.
+                        Title: MeaningfulOscTitle(s.ActivePane));
                 }).ToList()
             , Collapsed: !w.Expanded)).ToList();
     }
@@ -461,13 +469,26 @@ internal partial class Program
     // Dispatch turns into ok:false with nothing applied (#228 item 5). The server has already refused
     // a blank name. The rename does not touch Context — the name and the context are two fields, and
     // rename edits one of them.
-    public string SessionRename(string? target, string name)
+    public string SessionRename(string? target, string? name)
     {
         return InvokeOnUiQueued(() =>
         {
             var ses = FindSesForTarget(target);
             if (ses is null) return ISessionHost.RefusePrefix + SessionNames.NoSession;
-            ses.Name = name; ses.CustomName = name;   // CustomName drives the title bar
+            if (name is null)
+            {
+                // A clear has to put BOTH fields back, because a rename wrote both: dropping only
+                // CustomName would leave the row showing the name through Ses.Name, which is the field
+                // DisplayName falls back to. The ordinal is not stored anywhere — CreateSession reads
+                // ws.Sessions.Count + 1 once — so it is recomputed from where the session sits now. That
+                // can differ from the number it was born with, and matches what the sidebar shows, which
+                // is the useful answer rather than the historical one.
+                int ordinal;
+                lock (_workspaces) ordinal = ses.Ws.Sessions.IndexOf(ses) + 1;
+                ses.CustomName = null;
+                ses.Name = $"session {Math.Max(1, ordinal)}";
+            }
+            else { ses.Name = name; ses.CustomName = name; }   // CustomName drives the title bar
             RequestRedraw(); SaveState();
             return SessionNames.Reply(ses.Id, ses.CustomName);
         });

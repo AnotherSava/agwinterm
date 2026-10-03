@@ -541,6 +541,9 @@ public sealed class ControlServer : IDisposable
                 // context: the session.context read-back, emitted only when one is set — absent is
                 // "none", the same spelling the flags above use for "no" (P3).
                 if (n.Context is not null) sb.Append(",\"").Append(SessionContexts.Key).Append("\":").Append(JsonSerializer.Serialize(n.Context));
+                // title: the focused pane's program title, absent when it has none. Emitted even while a
+                // custom name hides it in the chrome, which is the case a caller cannot see any other way.
+                if (n.Title is not null) sb.Append(",\"title\":").Append(JsonSerializer.Serialize(n.Title));
                 AppendPaneMap(sb, "restoreCommands", n.RestoreCommands, n.PaneIds);
                 // capturedCommands: the restore.capture read-back, same spelling — emitted only when
                 // any pane's slot holds a capture (P3).
