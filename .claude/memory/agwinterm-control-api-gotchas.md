@@ -19,8 +19,9 @@ by default. Read the pane with `session text` first.
 *is* the pane id and is stable across restarts — but it only reaches a process agwinterm started
 directly. A pane whose foreground is `wsl.exe -d … -- launcher.sh`, or `ssh host cmd`, launches
 the real program in an environment that never received the variable, so nothing running there can
-name its own pane. `tree` carries no cwd either, so an outside tool cannot match a pane by
-project directory; that is filed upstream as #353.
+name its own pane. Matching a pane by its project directory is what `tree`'s `paneCwds` field is
+for, added on `local`; upstream still reports no cwd, which is what #353 asks for. Labelling a
+session from outside goes through the OSC title instead ([[agwinterm-session-title-route]]).
 
 Two smaller ones from the same session: `session text` can come back empty for a pane that is not
 the active one, so an empty buffer is not evidence the pane is dead — check for a live shell
