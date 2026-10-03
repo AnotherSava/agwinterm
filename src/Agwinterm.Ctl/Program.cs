@@ -199,7 +199,18 @@ switch (area)
                 target = rest.Count > 0 ? rest[0] : (Opt("target") ?? "active");
                 break;
             case "rename": // session rename <new-name...> [--target ID]
-                if (rest.Count == 0 && Opt("name") is null) { Console.Error.WriteLine("session rename needs a name"); return 2; }
+                if (options.ContainsKey("clear"))
+                {
+                    // One source for the field, refused client-side (nothing is sent) — the shape
+                    // `session context --clear` already has. The
+                    // splitter hands any flag the next bare word, so text can hide behind --clear.
+                    bool renameSwallowed = valued.Any(k => !Agwinterm.Ctl.FrameShmCli.GlobalValuedOptions.Contains(k, StringComparer.OrdinalIgnoreCase));
+                    if (rest.Count > 0 || renameSwallowed || Opt("name") is not null)
+                    { Console.Error.WriteLine("session rename: --clear cannot be combined with a name (one source for the name, not two); nothing was sent"); return 2; }
+                    cargs["clear"] = true;
+                    break;
+                }
+                if (rest.Count == 0 && Opt("name") is null) { Console.Error.WriteLine("session rename needs a name, or --clear"); return 2; }
                 cargs["name"] = rest.Count > 0 ? string.Join(' ', rest) : Opt("name")!;
                 break;
             case "context": // session context <text...> | --clear | --stdin  [--target ID]

@@ -184,6 +184,57 @@ public class ControlApiTests
         => JsonDocument.Parse(server.Dispatch("{\"cmd\":\"tree\"}")).RootElement
             .GetProperty("result").GetProperty("workspaces")[0].GetProperty("sessions")[index];
 
+    /// <summary>
+    /// <c>--clear</c> drops the custom name so the session falls back to its program title, and to
+    /// <c>session N</c> when it has none. Until it existed a rename could not be undone by anything — the
+    /// one per-session field with no release, while context, status, flag and pin all had one.
+    /// </summary>
+    [Fact]
+    public void SessionRename_Clear_DropsTheNameAndRepliesNull()
+    {
+        var (server, host) = New();
+        string id = host.ActiveSess!.Id;
+        Dispatch(server, "session.rename", new { name = "written by a tool" });
+
+        var r = Dispatch(server, "session.rename", new Dictionary<string, object> { ["clear"] = true });
+
+        Assert.True(Ok(r));
+        Assert.Equal(id, r.GetProperty("result").GetProperty("session").GetString());
+        Assert.Equal(JsonValueKind.Null, r.GetProperty("result").GetProperty("name").ValueKind);
+        Assert.Equal("session 1", host.ActiveSess.Name);   // back to the ordinal, recomputed from its place
+        Assert.False(host.ActiveSess.Custom);
+    }
+
+    /// <summary>A name beside <c>--clear</c> is two sources for one field, refused rather than ranked —
+    /// the rule <c>session context</c> set. The old name stands.</summary>
+    [Fact]
+    public void SessionRename_NameBesideClear_IsRefusedAndChangesNothing()
+    {
+        var (server, host) = New();
+        Dispatch(server, "session.rename", new { name = "standing" });
+
+        var r = Dispatch(server, "session.rename", new Dictionary<string, object> { ["name"] = "other", ["clear"] = true });
+
+        Assert.False(Ok(r));
+        Assert.Equal(SessionNames.TextAndClear, r.GetProperty("error").GetString());
+        Assert.Equal("standing", host.ActiveSess!.Name);
+    }
+
+    /// <summary>An unknown target refuses a clear the same way it refuses a rename — one wording for one
+    /// condition, whichever form the verb took.</summary>
+    [Fact]
+    public void SessionRename_Clear_UnknownTarget_IsRefused()
+    {
+        var (server, host) = New();
+        Dispatch(server, "session.rename", new { name = "standing" });
+
+        var r = Dispatch(server, "session.rename", new Dictionary<string, object> { ["clear"] = true }, target: "no-such-id");
+
+        Assert.False(Ok(r));
+        Assert.Equal(SessionNames.NoSession, r.GetProperty("error").GetString());
+        Assert.Equal("standing", host.ActiveSess!.Name);
+    }
+
     /// <summary>#287: a blank name and an unknown target were one wording ("session not found /
     /// blank name") for two conditions. Each has its own now, and neither changes anything.</summary>
     [Fact]

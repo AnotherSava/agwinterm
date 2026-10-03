@@ -57,6 +57,9 @@ internal sealed class FakeSessionHost : ISessionHost
         /// app writes null), read back through the tree's <c>capturedCommands</c>, so a refused call is
         /// asserted to have left it untouched.</summary>
         public readonly Dictionary<string, string> Captured = new();
+        /// <summary>Whether <see cref="Name"/> came from a rename, so the reply can say null after a
+        /// clear the way the app's CustomName does. The app keeps two fields; the fake keeps one and a flag.</summary>
+        public bool Custom;
         /// <summary>Scratch / overlay COVERS over this session, kept the way the app keeps them: NOT
         /// in <see cref="Panes"/> / <see cref="PaneIds"/> / PaneCount / the tree (the app holds them in
         /// Ses.Scratch / Ses.Overlay, and Tree() walks s.Panes only), and reachable as a target by
@@ -466,12 +469,21 @@ internal sealed class FakeSessionHost : ISessionHost
     // the name landed on and the name read BACK off it. The blank check is the fake's tripwire, as
     // SessionContext's Validate is — ControlServer refuses a blank name before the host is reached,
     // so a test that drives the host directly with one must blow up, not see it stored.
-    public string SessionRename(string? target, string name)
+    public string SessionRename(string? target, string? name)
     {
         var s = FindSes(target);
         if (s is null) return ISessionHost.RefusePrefix + SessionNames.NoSession;
-        if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("the server should have refused this: " + SessionNames.Blank, nameof(name));
-        s.Name = name;
+        if (name is not null && string.IsNullOrWhiteSpace(name)) throw new ArgumentException("the server should have refused this: " + SessionNames.Blank, nameof(name));   // the tripwire SessionContext has
+        if (name is null)
+        {
+            // The app puts BOTH its fields back and recomputes the ordinal from the session's place in
+            // its workspace; the fake has one Name field, so the ordinal is all there is to restore.
+            var ws = Workspaces.First(w => w.Sessions.Contains(s));
+            s.Name = $"session {ws.Sessions.IndexOf(s) + 1}";
+            s.Custom = false;
+            return SessionNames.Reply(s.Id, null);
+        }
+        s.Name = name; s.Custom = true;
         return SessionNames.Reply(s.Id, s.Name);
     }
     public string SessionHud(string? target, string action, HudSpec? spec)
@@ -587,8 +599,8 @@ internal sealed class FakeSessionHost : ISessionHost
     // refused; a one-pane session is refused). Then the pane order is reversed and focus follows the
     // pane; the RATIO SEQUENCE is kept — the fake's Ratios is a per-SLOT list, so keeping it untouched is
     // the same rule the app applies by exchanging the two panes' own shares; the axis is kept; every id
-    // is kept, and the per-pane dictionaries (pins, slots, foregrounds) are keyed by pane id, so they
-    // travel with their pane as the app's Pane fields do. The reply is read back off the session.
+    // is kept, and every per-pane dictionary is keyed by pane id, so each one travels with its pane as
+    // the app's Pane fields do. The reply is read back off the session.
     public SwapResult Swap(string? target)
     {
         Sess? s;

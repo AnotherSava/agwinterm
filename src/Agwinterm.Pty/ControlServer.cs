@@ -752,8 +752,15 @@ public sealed class ControlServer : IDisposable
     /// </summary>
     private static string HandleSessionRename(ISessionHost host, string? target, JsonElement args)
     {
-        string name = (GetString(args, SessionNames.Key) ?? "").Trim();
-        if (name.Length == 0) return Err(SessionNames.Blank);
+        string? raw = GetString(args, SessionNames.Key);
+        bool clear = GetBool(args, "clear");
+        if (clear && raw is not null) return Err(SessionNames.TextAndClear);
+        string? name = null;
+        if (!clear)
+        {
+            name = (raw ?? "").Trim();
+            if (name.Length == 0) return Err(SessionNames.Blank);
+        }
         string reply = host.SessionRename(target, name);
         return reply.StartsWith(ISessionHost.RefusePrefix, StringComparison.Ordinal)
             ? Err(reply[ISessionHost.RefusePrefix.Length..])

@@ -39,9 +39,9 @@ public static class SessionNames
     public const string Key = "name";
 
     /// <summary>The blank refusal. A rename with no text is not a request to clear the name (there
-    /// is no clear: a session with no custom name shows its cwd/OSC title, which is a different
-    /// thing from a session named ""), so it is refused rather than ranked — the wording
-    /// <see cref="SessionContexts.Blank"/> uses for the same condition one verb over.</summary>
+    /// is a <c>--clear</c> for that, and a session with no custom name shows its program title or its
+    /// cwd, which is a different thing from a session named ""), so it is refused rather than ranked —
+    /// the wording <see cref="SessionContexts.Blank"/> uses for the same condition one verb over.</summary>
     public const string Blank =
         "session rename: the name is blank; a name is one line of printable text. Nothing changed.";
 
@@ -51,14 +51,19 @@ public static class SessionNames
     /// by the window-level quick terminal, which covers no session.</summary>
     public const string NoSession = "session not found; nothing changed";
 
+    /// <summary>Text and <c>--clear</c> together: two sources for one field, refused rather than
+    /// ranked, the rule <see cref="SessionContexts.TextAndClear"/> states for its own field.</summary>
+    public const string TextAndClear = "session rename: a name and --clear cannot be combined (one says what the session is called, the other that it has no custom name). Nothing changed.";
+
     /// <summary>
     /// The success reply, built by both hosts so the shape cannot drift between them:
     /// <c>{"session":"&lt;id&gt;","name":"&lt;name&gt;"}</c>. It names the session the name landed on
     /// (the target may have been a prefix, a name, a split pane's id or a cover pane's id) and the
     /// name IN EFFECT after the write — read off the session inside the UI-thread hop, never echoed
-    /// from the request, so a reply that says a name is set means the session carries it.
+    /// from the request, so a reply that says a name is set means the session carries it. After a
+    /// <c>--clear</c> the name is <c>null</c>, the spelling <c>session.context</c> uses for the same thing.
     /// </summary>
-    public static string Reply(string sessionId, string name) =>
+    public static string Reply(string sessionId, string? name) =>
         "{\"session\":" + JsonSerializer.Serialize(sessionId) + ",\"" + Key + "\":" +
-        JsonSerializer.Serialize(name) + "}";
+        (name is null ? "null" : JsonSerializer.Serialize(name)) + "}";
 }

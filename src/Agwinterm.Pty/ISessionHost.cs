@@ -183,7 +183,7 @@ public interface ISessionHost
     /// nothing applied (#228 item 5: every verb that posts to the UI thread answers with the post's
     /// outcome, never a constant true).</para>
     /// </summary>
-    string SessionRename(string? target, string name);
+    string SessionRename(string? target, string? name);
 
     /// <summary>
     /// <c>session.context</c>: set (or, with <paramref name="context"/> null, clear) a session's
@@ -666,7 +666,7 @@ public sealed class SingleSessionHost : ISessionHost
     public bool SessionToWorkspace(string? target, string workspace) => false;
     // One session, no sidebar row and no title bar to draw a name in: the single-session host has
     // nothing to rename, and says so with the wording every host uses for "no session".
-    public string SessionRename(string? target, string name) => ISessionHost.RefusePrefix + SessionNames.NoSession;
+    public string SessionRename(string? target, string? name) => ISessionHost.RefusePrefix + SessionNames.NoSession;
     public string SessionContext(string? target, string? context) => ISessionHost.RefusePrefix + SessionContexts.NoSession;
     public bool SessionSeen(string? target) => false;
     public string SidebarState() => $"visible tree {SidebarWidths.Default}";
