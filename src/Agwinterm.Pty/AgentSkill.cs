@@ -75,7 +75,9 @@ public static class AgentSkill
           from a live one beside it, and no verb reports the stamp per pane. Always present, even
           for an idle session that never set one)
           `paneCwds` = each pane's working directory, an object keyed by pane id — the live OSC 7 cwd when the
-          shell reports one, else the dir the pane was launched in; a pane whose dir is unknown is absent and a
+          shell reports one AND that directory still exists, else the dir the pane was launched in (so a pane
+          whose cwd was deleted, or whose `\\wsl$\…` path is unreachable, reports the launch dir rather than a
+          path nothing can open); a pane whose dir is unknown is absent and a
           session with none omits the key. Read off the PANE, so it survives a `wsl.exe`/`ssh` wrapper that
           hides the project from everything running inside it: this is how a tool outside agwinterm matches a
           pane to a project when nothing in the pane can name its own pane. Keyed by id rather than in pane
@@ -116,7 +118,8 @@ public static class AgentSkill
           session it landed on and the name IN EFFECT, so you can see which one took it; read it back in
           `tree --json` as `name`. A blank name is refused, and so is a target that belongs to no session
           (the quick terminal). `--clear` drops the name again (a name beside it is refused; replies
-          `{session, name:null}`) — after which the row shows the session's PROGRAM title, else `session N`.
+          `{session, name:null}`) — after which the row shows the session's PROGRAM title, else its cwd
+          basename, else `session N`.
         - **Sessions label themselves.** The display name is the custom name, else the focused pane's OSC 0/2
           title, else that pane's cwd basename, else `session N` — agterm displayName parity, used by the
           sidebar row, the palettes, the Ctrl+Tab switcher, the dashboard grid, toasts, UIA and the rename

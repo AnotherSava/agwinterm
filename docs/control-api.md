@@ -149,8 +149,11 @@ environment that never received it, and nothing running there can name its own p
 the directory off the pane rather than off the process, so it stays right behind such a wrapper.
 
 Each session node carries `paneCwds`, an object keyed by pane id giving that pane's working
-directory: the live OSC 7 cwd when the shell reports one, else the directory the pane was launched
-in. A pane whose directory is unknown is absent, and a session where no pane's is known omits the key
+directory: the live OSC 7 cwd when the shell reports one and that directory still exists, else the
+directory the pane was launched in. The existence test is what keeps the value openable — a pane whose
+cwd has since been deleted, or whose `\\wsl$\…` path is unreachable because the distro is down,
+reports its launch directory rather than a path the caller cannot enter.
+A pane whose directory is unknown is absent, and a session where no pane's is known omits the key
 — the same spelling `restoreCommands` and `capturedCommands` use for "none".
 
 Keying it by pane id rather than listing it in pane order like `foregroundShells` is what makes a
@@ -158,7 +161,9 @@ one-pane session answerable: the tree emits `paneIds` only while a session is sp
 give back a directory attached to no id you can pass to `--target`.
 
 Leave `shell-integration` off and the shell reports no OSC 7, so the value is the launch directory and
-a later `cd` does not move it. That is the same reading the title bar's cwd fallback uses.
+a later `cd` does not move it. That is the launch directory the title bar falls back to as well, though
+the title bar shows a live OSC 7 cwd without testing that it exists — the field does, so the two can
+differ on a directory that has been deleted under the shell.
 
 ## `version`
 
