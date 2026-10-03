@@ -195,6 +195,37 @@ session without setting it before the first redraw.
 
 ---
 
+## A colour glyph in a name or a context is drawn in colour
+
+**Guards:** Direct2D renders a colour font's glyphs as a flat outline in the brush colour unless the
+draw site passes `EnableColorFont`. Names and contexts are strings somebody else authored and
+routinely carry emoji — an agent writing its status into a session name, a user marking a workspace —
+so without the flag the glyph arrives grey while the same code point is in colour in every other
+Windows app. `AuthoredText` and `AuthoredTextClipped` in `Program.cs` carry the option set, and
+nothing enforces that a new draw site reaches for them, which is why this is an eye check rather than
+a test.
+
+**Setup:** a session whose name begins with a colour emoji and whose context holds another — through
+the pipe rather than the CLI if the shell mangles the code point. Read `tree --json` first and
+confirm the field holds the character you meant: a mangled write and a grey render look alike on a
+capture, and only one of them is this defect. Sidebar shown.
+
+**Steps:**
+1. `Shot 'glyph-rows' $Rows`, and crop that session's row.
+2. Capture the title-bar band, which draws the same name and the same context.
+3. Open the session palette and capture its first line, which draws both again.
+
+**Expect:** the glyph carries its own colours in all three places, not the row's text colour. On a
+capture the honest test is the pixels: count those above saturation 0.45 and group them by hue, and a
+colour glyph puts them in several buckets where a monochrome outline is one low-saturation brush
+colour and fills a single bucket or none.
+
+**Fails when:** a site drawing a name or a context is given `DrawTextOptions.Clip` directly instead of
+`AuthoredTextClipped`, or a new surface drawing one of those strings is added with neither. Both show
+up only here — the control API reports the field set either way.
+
+---
+
 ## The persisted half
 
 Not a case here — a script, because it has to relaunch the app: `tests/integration/restore-roundtrip.ps1`
