@@ -149,6 +149,41 @@ public class ControlApiTests
         Assert.Equal("built", host.ActiveSess.Name);
     }
 
+    /// <summary>
+    /// <c>tree</c> reports the focused pane's program title as <c>title</c> — <b>whether or not a custom
+    /// name hides it in the chrome</b>: a caller tracking what a session IS cannot get that from
+    /// <c>name</c> once something has renamed it.
+    /// </summary>
+    [Fact]
+    public void Tree_ReportsTheProgramTitle_EvenBehindACustomName()
+    {
+        var (server, host) = New();
+        host.ActiveSess!.Title = "claude";
+
+        var before = TreeSession(server);
+        Assert.Equal("claude", before.GetProperty("title").GetString());
+
+        Dispatch(server, "session.rename", new { name = "renamed over it" });
+        var after = TreeSession(server);
+
+        Assert.Equal("renamed over it", after.GetProperty("name").GetString());
+        Assert.Equal("claude", after.GetProperty("title").GetString());          // still reported
+    }
+
+    /// <summary>A session whose focused pane sets no title omits the key, the spelling every optional
+    /// field in the tree uses for "none".</summary>
+    [Fact]
+    public void Tree_OmitsTheTitleKey_WhenNoPaneSetsOne()
+    {
+        var (server, _) = New();
+        var node = TreeSession(server);
+        Assert.False(node.TryGetProperty("title", out _));
+    }
+
+    private static JsonElement TreeSession(ControlServer server, int index = 0)
+        => JsonDocument.Parse(server.Dispatch("{\"cmd\":\"tree\"}")).RootElement
+            .GetProperty("result").GetProperty("workspaces")[0].GetProperty("sessions")[index];
+
     /// <summary>#287: a blank name and an unknown target were one wording ("session not found /
     /// blank name") for two conditions. Each has its own now, and neither changes anything.</summary>
     [Fact]
