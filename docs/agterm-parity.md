@@ -37,7 +37,7 @@ named as such rather than left to look like a backlog nobody is working on.
 | `session.restore` reports which pane received the content (+ `restoreCommands` in `tree`) | 0.26.0 | agwinterm #226 *(P2)* |
 | `sidebar.width` — the width in effect, out of range refused; unknown `sidebar` ops refused | 0.26.0 | agwinterm #226 *(P2)* |
 | `session.new` refuses an unknown workspace; a bare `session new` lands in the caller's workspace | — | agwinterm #226 *(P2)*, lite: P2-lite *(caller half)* |
-| `session.context` — one line per session, shown in the title bar, the row and the palette, in `tree` as `context`, restored after a restart | 0.26.0 | agwinterm #233 *(P3)*, lite: P3-lite |
+| `session.context` — one line per session, shown in the title bar, the row (unless `sidebar-context = false`) and the palette, in `tree` as `context`, restored after a restart | 0.26.0 | agwinterm #233 *(P3)*, lite: P3-lite |
 | `restore.capture` — fill the captured-command slots on demand, per-pane reply, `capturedCommands` in `tree` | 0.26.0 | agwinterm #233 *(P3)*, lite: P3-lite |
 | `session.split` replies with the **pane id** (the split pane's on `on`, also when already split; the survivor's on `off`) | — | agwinterm *(P4, #238)*; lite had it (#13) |
 | Horizontal splits — `--axis vertical\|horizontal` on `session.split` (agterm's words: vertical = left/right, horizontal = top/bottom), per session, re-orients live, survives restore, `axis` in `tree`; `session.focus` takes `primary\|split\|left\|right\|top\|bottom\|other`, `session.resize` gains `--grow-top` / `--grow-bottom` | 0.23.0 | agwinterm *(P4, #238)*, lite: P4-lite |

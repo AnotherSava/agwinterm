@@ -1000,7 +1000,7 @@ internal partial class Program
     {
         "font-family", "font-size", "cursor-style", "cursor-blink", "cursor-blink-ms", "theme",
         "theme-follow-system", "theme-dark", "theme-light",
-        "scrollback-lines", "inactive-pane-dim", "unfocused-dim", "builtin-glyphs", "ligatures", "window-opacity", "sidebar-tint", "sidebar-font-size", "scroll-speed",
+        "scrollback-lines", "inactive-pane-dim", "unfocused-dim", "builtin-glyphs", "ligatures", "window-opacity", "sidebar-tint", "sidebar-font-size", "sidebar-context", "sidebar-status-dot", "scroll-speed",
         "new-session-dir", "right-click-paste", "copy-on-select", "copy-on-ctrl-c", "word-delimiters", "desktop-notifications", "shell-integration",
         "restore-commands", "restore-buffer", "blocked-sound", "notification-sound", "omp-theme", "omp-integration", "prompt-engine", "starship-theme",
         "new-session-dir-mode", "confirm-close-session", "compact-toolbar", "toolbar-mode", "notification-badges",
@@ -1058,6 +1058,8 @@ internal partial class Program
         "window-opacity" => _config.WindowOpacity.ToString(),
         "sidebar-tint" => _config.SidebarTint.ToString(),
         "sidebar-font-size" => _config.SidebarFontSize.ToString(),
+        "sidebar-context" => _config.SidebarContext ? "true" : "false",
+        "sidebar-status-dot" => _config.SidebarStatusDot ? "true" : "false",
         "scroll-speed" => _config.ScrollSpeed.ToString(),
         "new-session-dir" => _config.NewSessionDir,
         "right-click-paste" => _config.RightClickPaste ? "true" : "false",

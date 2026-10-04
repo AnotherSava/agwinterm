@@ -11,12 +11,14 @@ namespace Agwinterm.Pty;
 ///
 /// <list type="bullet">
 /// <item><b>Min 120.</b> A session row draws its name from x = 26 (40 for an elevated session) to
-/// 22 DIP short of the right edge, where the status dot sits; a workspace row keeps 56 DIP on the
-/// right for its count and "+" button; the footer puts two 34-DIP buttons at the left and one at the
-/// right with 10 DIP of margin, 112 in all. Below about 112 the footer buttons overlap each other,
-/// and at 120 a name still gets ~72 DIP, eight or nine characters of the sidebar font — the least
-/// that still identifies a session. Narrower is a strip of dots and the tree cannot render a name
-/// at all.</item>
+/// 22 DIP short of the right edge, where the status dot sits; a workspace row keeps 52 DIP on the
+/// right for its count and "+" button. Both reserves shrink to the row's own 12-DIP margin when
+/// their config turns that side off (<c>sidebar-status-dot</c>, <c>workspace-add-button</c>), so the
+/// numbers here are the narrowest case the range must hold. The footer puts two 34-DIP buttons at
+/// the left and one at the right with 10 DIP of margin, 112 in all. Below about 112 the footer
+/// buttons overlap each other, and at 120 a name still gets ~72 DIP, eight or nine characters of
+/// the sidebar font — the least that still identifies a session. Narrower is a strip of dots and
+/// the tree cannot render a name at all.</item>
 /// <item><b>Max 600.</b> The content region has to stay usable beside the tree. A 1280-DIP window
 /// (the narrowest common laptop at 100 %) keeps ~680 DIP of content at 600, about 80 columns of the
 /// default cell — the width every shell and TUI assumes. Wider than that and an 80-column program no
