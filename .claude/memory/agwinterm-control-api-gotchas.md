@@ -26,3 +26,10 @@ session from outside goes through the OSC title instead ([[agwinterm-session-tit
 Two smaller ones from the same session: `session text` can come back empty for a pane that is not
 the active one, so an empty buffer is not evidence the pane is dead — check for a live shell
 process instead. And `tree` is already JSON, so passing `--json` makes it fail.
+
+**`config get <unknown-key>` prints nothing and exits 0.** Measured 2026-10-03. There is no
+refusal, so an unknown key is indistinguishable from a key whose value is empty. The useful half
+holds: a *non-empty* answer proves the running build knows that key, which is how to confirm a
+freshly deployed binary carries a config key the previous one did not — `config get` succeeding
+with a value is an identity check on the build, not just a liveness check. The absent half does
+not: never read an empty answer as "the key is gone".
