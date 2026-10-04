@@ -148,6 +148,9 @@ internal partial class Program
         Tog(1, "cursor-blink", "Blink cursor");
         Sec(1, "Window");
         Tog(1, "compact-toolbar", "Compact toolbar");
+        Tog(1, "sidebar-context", "Session context on sidebar rows");
+        Tog(1, "sidebar-status-dot", "Agent-status dot on sidebar rows");
+        Tog(1, "workspace-add-button", "Session count and + on workspace rows");
         Sld(1, "window-opacity", "Window opacity", 30, 100);
         Sld(1, "sidebar-tint", "Sidebar tint", -100, 100);
         Sld(1, "sidebar-font-size", "Sidebar font size", 9, 20);

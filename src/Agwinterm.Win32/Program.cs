@@ -162,6 +162,10 @@ internal partial class Program : ISessionHost, IWindowHost
     // before this assembly is reached.
     private const float SidebarWFull = Agwinterm.Pty.SidebarWidths.Default;
     private const float CaptionBtnW = 46f;   // native min/max/close hit width
+    // A sidebar row's own right edge, used when nothing is drawn on that side — the status dot hidden
+    // by `sidebar-status-dot`, the count and "+" by `workspace-add-button`. Shared by DrawTreeList and
+    // DrawSessionRow (Program.Chrome.cs) so the two row kinds cannot end their text at different edges.
+    private const float SidebarRowRightMargin = 12f;
     private float _sidebarW = SidebarWFull;            // 0 when collapsed; otherwise == _sidebarWShown
     // The width the sidebar has when shown. `sidebar width` sets THIS; ToggleSidebar copies it into
     // _sidebarW on show, and it is what the state file's SidebarWidth carries — so a width set while
@@ -283,10 +287,14 @@ internal partial class Program : ISessionHost, IWindowHost
     private static readonly Dictionary<int, IntPtr> _editFonts = new();   // by pixel height: windows on different monitors share by size
     private static IntPtr _editBrush;         // cached dark background brush (WM_CTLCOLOREDIT)
 
-    private void EnsureEditGdi()
+    /// <summary>The rename box's HFONT at <paramref name="dip"/>, the em size of the DirectWrite format
+    /// whose text the box covers — callers pass <c>_sidebarFont.FontSize</c> or <c>_uiFont.FontSize</c>
+    /// rather than a number, so a box can never be sized differently from the text it replaces (the
+    /// sidebar's follows <c>sidebar-font-size</c>, 9..20, while the title bar's is fixed).</summary>
+    private void EnsureEditGdi(float dip)
     {
-        // Segoe UI ~13 DIP to match the sidebar row text; ClearType; dark bg like the sidebar.
-        int px = ToDevice(13);
+        // ClearType; dark bg like the sidebar. GDI wants device pixels, DirectWrite sizes are in DIP.
+        int px = ToDevice(dip);
         lock (_editFonts)
             if (!_editFonts.TryGetValue(px, out _editFont))
                 _editFonts[px] = _editFont = CreateFontW(-px, 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 5, 0, "Segoe UI");
@@ -701,13 +709,19 @@ internal partial class Program : ISessionHost, IWindowHost
         // leaving the window invisible and unreachable — clamp it onto the nearest visible work area first.
         if (_geoValid) ClampGeoToVisibleScreen(ref _geoX, ref _geoY, ref _geoW, ref _geoH);
         _creating = this;                    // so the WindowProc trampoline can resolve us during CreateWindowExW
+        // WS_CLIPCHILDREN keeps our painting out of the inline rename box's rectangle — the EDIT child
+        // StartRename (Program.Chrome.cs) and StartWindowRename (MenuBar.cs) create. Without it the
+        // Direct2D present and every full-client InvalidateRect reach inside that rectangle, so the
+        // sidebar fill, the chevron, the count and the "+" repaint over the box between its own paints
+        // and the row's chrome flickers while you type. The bit sits outside WS_OVERLAPPEDWINDOW's
+        // 0x00CF0000 mask, which ToggleFullscreen (Program.Services.cs) strips, so it survives that.
         _hwnd = _isQuickWindow
-            ? CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, ClassName, "agwinterm quick terminal", WS_POPUP,
+            ? CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_TOPMOST, ClassName, "agwinterm quick terminal", WS_POPUP | WS_CLIPCHILDREN,
                 0, 0, 640, 480, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero)
             : _geoValid
-            ? CreateWindowExW(0, ClassName, AppName, WS_OVERLAPPEDWINDOW,
+            ? CreateWindowExW(0, ClassName, AppName, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
                 _geoX, _geoY, _geoW, _geoH, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero)
-            : CreateWindowExW(0, ClassName, AppName, WS_OVERLAPPEDWINDOW,
+            : CreateWindowExW(0, ClassName, AppName, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
                 CW_USEDEFAULT, CW_USEDEFAULT, 1040, 660, IntPtr.Zero, IntPtr.Zero, hInstance, IntPtr.Zero);
         _creating = null;
         if (_hwnd == IntPtr.Zero)
@@ -908,8 +922,9 @@ internal partial class Program : ISessionHost, IWindowHost
         try { _sidebarCtxEllipsis?.Dispose(); } catch { }
         _sidebarFont = NewChromeFormat("Segoe UI", px, center: false);
         _sidebarSmall = NewChromeFormat("Segoe UI", System.Math.Max(9f, px - 1.5f), center: false);
-        // Trim over-long names with a "…" (esp. once the font is enlarged) so they never spill over the
-        // right-aligned status dot. Paired with DrawTextOptions.Clip at the draw sites.
+        // Trim over-long names with a "…" (esp. once the font is enlarged) so they never spill past the
+        // row's right reserve — the status dot, or SidebarRowRightMargin when `sidebar-status-dot` hides
+        // it. Paired with DrawTextOptions.Clip at the draw sites.
         _sidebarEllipsis = _dwrite.CreateEllipsisTrimmingSign(_sidebarFont);
         _sidebarFont.SetTrimming(new Trimming { Granularity = TrimmingGranularity.Character }, _sidebarEllipsis);
         // The context suffix gets the same treatment on its own format: a hard clip mid-glyph against

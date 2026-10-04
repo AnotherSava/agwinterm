@@ -21,7 +21,8 @@ public static class AgentSkill
         # agwinterm
 
         agwinterm is a Windows terminal built for AI coding agents. When you run inside it you can
-        control it: report your status (a colored dot per session in the sidebar), manage sessions,
+        control it: report your status (a colored dot per session in the sidebar, unless
+        `sidebar-status-dot = false`, in which case the dashboard and the switcher carry it), manage sessions,
         type into sessions, and show images — via the `agwintermctl` CLI (preferred) or by writing
         one newline-delimited JSON request to its control pipe.
 
@@ -130,6 +131,8 @@ public static class AgentSkill
           `--target <name>` resolves against.
         - `agwintermctl session context <text> [--target ID]` — ONE LINE of "what is this pane for", shown dimmed after the
           name in the title bar and the sidebar row and on the palette's second line, where the name has to stay short.
+          The sidebar half can be turned off (`sidebar-context = false`) without clearing the value, so a row that shows
+          no context does NOT mean none is set — read `tree --json` rather than the screen.
           It survives a restart (and `session reopen`), and `tree --json` reads it back as `context` on the session node
           (absent when none) — so set it when you start a task and any agent can see what each pane is doing. The value
           is one line: a newline, tab or other control character is REFUSED (a control byte in the title bar is a

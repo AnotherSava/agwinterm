@@ -99,15 +99,22 @@ internal partial class Program
 
             brush.Color = SbHeaderText;
             rt.DrawText(expanded ? "▾" : "▸", _format, TextRect(6f, y, 18f, rowH), brush); // chevron (mono, top-aligned)
+            // The name stops 6 DIP before the leftmost thing drawn on the right — the "+" at W-46 — or
+            // at the row's own margin when the pair is hidden. A fixed reserve lets a long name run
+            // under the "+", which is drawn after it and paints over the name's tail.
+            float wsNameRight = _config.WorkspaceAddButton ? _sidebarW - 46f - 6f : _sidebarW - SidebarRowRightMargin;
+            float wsNameW = MathF.Max(0f, wsNameRight - 24f);
             if (!ReferenceEquals(_editing, ws)) // the rename box covers the name while editing
             {
-                // Clip + ellipsis so a long workspace name (or enlarged font) stops before the session count.
-                rt.DrawText(ws.Name, _sidebarFont, new Rect(24f, y, _sidebarW - 56f, rowH), brush, AuthoredTextClipped);
-                RecordSidebarName(ws, ws.Name, 24f, y, _sidebarW - 56f, rowH);
+                // Clip + ellipsis so a long workspace name (or enlarged font) stops before the count and "+".
+                rt.DrawText(ws.Name, _sidebarFont, new Rect(24f, y, wsNameW, rowH), brush, AuthoredTextClipped);
+                RecordSidebarName(ws, ws.Name, 24f, y, wsNameW, rowH);
             }
-            rt.DrawText(sessions.Count.ToString(), _sidebarSmall, new Rect(_sidebarW - 28f, y, 22f, rowH), brush);
-            if (_config.WorkspaceAddButton)   // "+" to add a session in this workspace (#233/#252)
+            if (_config.WorkspaceAddButton)   // the session count and the "+" that adds one (#233/#252)
+            {
+                rt.DrawText(sessions.Count.ToString(), _sidebarSmall, new Rect(_sidebarW - 28f, y, 22f, rowH), brush);
                 rt.DrawText("+", _sidebarFont, new Rect(_sidebarW - 46f, y, 16f, rowH), brush);
+            }
             _sidebarRows.Add((y, y + rowH, true, ws));
             y += rowH;
 
@@ -188,15 +195,19 @@ internal partial class Program
         int unread = UnreadOf(s);
         string? badgeText = unread > 0 && _config.NotificationBadges ? (unread > 99 ? "99+" : unread.ToString()) : null;
         float badgeWidth = badgeText is null ? 0f : MeasureText(badgeText, _uiSmall) + 10f;
-        float badgeX = _sidebarW - 30f - badgeWidth;
+        // The dot's lane is given back when it is hidden, down to SidebarRowRightMargin. Both the
+        // badge's 30 and the name's 22 below carry that lane, so a badge left at 30 would float over
+        // the space the dot vacated.
+        float badgeX = _sidebarW - (_config.SidebarStatusDot ? 30f : SidebarRowRightMargin) - badgeWidth;
         bool isDrag = _dragging && ReferenceEquals(s, _dragItem);
         brush.Color = isDrag ? new Color4(0.5f, 0.53f, 0.57f, 0.45f) : (active ? SbActiveText : SbDimText);
         if (!ReferenceEquals(_editing, s)) // the rename box covers the name while editing
         {
-            float nameRight = _sidebarW - 22f;
+            float nameRight = _sidebarW - (_config.SidebarStatusDot ? 22f : SidebarRowRightMargin);
             if (badgeText is not null) nameRight = MathF.Min(nameRight, badgeX - 5f);
             float nameAvail = MathF.Max(0f, nameRight - nameX);
-            // Clip + ellipsis-trim so a long name (or an enlarged sidebar font) never spills over the dot.
+            // Clip + ellipsis-trim so a long name (or an enlarged sidebar font) never spills past nameRight
+            // — the dot's lane, or the row margin when the dot is hidden.
             // The row follows the program, not just a stored name: DisplayName is custom name -> the
             // focused pane's OSC title -> its cwd basename -> Ses.Name, so a shell that titles itself,
             // or merely sits in a project, labels its own row.
@@ -208,7 +219,7 @@ internal partial class Program
             // never a second line and never changes rowH — DrawSidebar computes ONE rowH per paint and
             // every consumer of _sidebarRows (click, RowAt, the rename EDIT, drag, UIA) assumes it.
             // The palette's Secondary line is where the long form lives.
-            if (s.Context is string ctx && ctx.Length > 0)
+            if (_config.SidebarContext && s.Context is string ctx && ctx.Length > 0)
             {
                 float nameW = MathF.Min(MeasureText(label, _sidebarFont), nameAvail);
                 float ctxX = nameX + nameW + 6f, ctxW = nameAvail - nameW - 6f;
@@ -238,11 +249,14 @@ internal partial class Program
             if (exitCode is int code)
                 _sidebarNames.Add(new SidebarNameHit(s, $"{unread} unread; session ended (exit {code})", badgeX, y, badgeWidth, rowH));
         }
-        // Pane-aware: the status circle shows the most attention-worthy state across ALL panes.
-        var dot = StatusDot(AggStatus(s));
-        if (AggBlink(s) && !_cursorOn) dot = new Color4(dot.R, dot.G, dot.B, 0.22f);
-        brush.Color = dot;
-        rt.FillEllipse(new Ellipse(new System.Numerics.Vector2(_sidebarW - 16f, y + rowH / 2f), 4.5f, 4.5f), brush);
+        if (_config.SidebarStatusDot)
+        {
+            // Pane-aware: the status circle shows the most attention-worthy state across ALL panes.
+            var dot = StatusDot(AggStatus(s));
+            if (AggBlink(s) && !_cursorOn) dot = new Color4(dot.R, dot.G, dot.B, 0.22f);
+            brush.Color = dot;
+            rt.FillEllipse(new Ellipse(new System.Numerics.Vector2(_sidebarW - 16f, y + rowH / 2f), 4.5f, 4.5f), brush);
+        }
         _sidebarRows.Add((y, y + rowH, false, s));
     }
 
@@ -369,7 +383,7 @@ internal partial class Program
         // Seeded with what the ROW shows, not the stored name: F2 edits the text under the cursor, and a
         // row following its program is otherwise renamed from a `session N` nobody can see.
         string name = item is Ses s ? DisplayName(s) : ((Workspace)item).Name;
-        EnsureEditGdi();
+        EnsureEditGdi(_sidebarFont.FontSize);
         // Fill the whole row (matches the highlight band); a left text-margin puts the text exactly
         // where the row name is drawn, so nothing shifts when editing starts.
         // The single-line EDIT centres its text ~1px higher and its glyph sits ~1px right of the
@@ -1580,6 +1594,10 @@ internal partial class Program
 
     private void ChromeAction(string a)
     {
+        // A chrome click does not move focus off the rename EDIT — SetFocus(_hwnd) runs only in
+        // DestroyEditWindow — so EN_KILLFOCUS never fires and the box would stay up over whatever this
+        // action opens, which WS_CLIPCHILDREN stops us painting over. Commit it as clicking away does.
+        CommitRename();
         switch (a)
         {
             case "toggle": ToggleSidebar(); break;

@@ -167,5 +167,11 @@ bar when nothing else bound it), **Ctrl+Shift+D** (dashboard), **Ctrl+`** (quick
   follows the normal keymap / terminal path. Use `unmap ctrl+d` for one chord, or `unmap a | b` for
   several. Reload with **File → Reload Keymap** or `agwintermctl keymap reload`.
 - `show-menu-bar = false` hides the title-bar menu bar (File ▸ Edit agwinterm.conf… opens the file).
+- `sidebar-context = false` drops the `session context` suffix from sidebar rows, where it shares a
+  line with a name that can already fill it; the title bar and the session palette still show it.
+- `workspace-add-button = false` clears both the session count and the "+" off the right of each
+  workspace row, and the name then takes the whole row.
+- `sidebar-status-dot = false` drops the agent-status dot from session rows, widening the name by
+  10 DIP; the dashboard, the Ctrl+Tab switcher, the palettes and the title-bar bell still show status.
 - Themes: the bundled set ships with the app; drop extra ghostty-format `*.conf` files in
   `%LOCALAPPDATA%\agwinterm\themes\`.

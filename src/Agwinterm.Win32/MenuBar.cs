@@ -465,7 +465,7 @@ internal partial class Program
     {
         if (_editHwnd != IntPtr.Zero) CommitRename();
         if (_titleTextRect.Width <= 0) { ShowToast("no title bar to rename in"); return; }
-        EnsureEditGdi();
+        EnsureEditGdi(_uiFont.FontSize);   // the box covers the title text, which _uiFont draws
         int ex = ToDevice(_titleTextRect.X), ey = ToDevice(_titleTextRect.Y + 6), ew = ToDevice(Math.Max(160f, _titleTextRect.Width)),
             eh = ToDevice(TitleBarH - 12f), margin = ToDevice(6);
         _editHwnd = CreateWindowExW(0, "EDIT", WinName, WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL,

@@ -291,6 +291,7 @@ internal static class Win32
 
     public const uint CS_HREDRAW = 0x0002, CS_VREDRAW = 0x0001;
     public const uint WS_OVERLAPPEDWINDOW = 0x00CF0000, WS_VISIBLE = 0x10000000;
+    public const uint WS_CLIPCHILDREN = 0x02000000;   // outside WS_OVERLAPPEDWINDOW's mask, so ToggleFullscreen keeps it
     public const int CW_USEDEFAULT = unchecked((int)0x80000000);
     public static readonly IntPtr IDC_ARROW = (IntPtr)32512;
     public static readonly IntPtr IDC_HAND = (IntPtr)32649;

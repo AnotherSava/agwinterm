@@ -6,7 +6,7 @@ namespace Agwinterm.Core;
 /// </summary>
 public enum AgentStatus
 {
-    Idle,       // no indicator
+    Idle,       // grey dot in the sidebar; the dashboard draws nothing
     Active,     // agent working
     Blocked,    // awaiting the user
     Completed,  // finished

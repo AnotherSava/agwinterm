@@ -155,6 +155,17 @@ public sealed class TerminalConfig
     /// <summary>Font size (pt) of the workspace/session names in the sidebar. Default 13.</summary>
     public int SidebarFontSize { get; set; } = 13;
 
+    /// <summary>Draw <c>session.context</c> as a dimmed suffix on sidebar session rows. On by default.
+    /// Off leaves the context set and still drawn in the title bar and on the palette's second line —
+    /// the row is the one surface where it shares a line with a name that can already fill it.</summary>
+    public bool SidebarContext { get; set; } = true;
+
+    /// <summary>Draw the agent-status dot at the right of each sidebar session row. On by default.
+    /// Off narrows the row's right reserve from 22 DIP to its 12 DIP margin, so the name gains 10; the
+    /// status still reaches the dashboard, the Ctrl+Tab switcher, the palettes, the title-bar bell and
+    /// <c>tree --json</c>, so nothing goes unreported.</summary>
+    public bool SidebarStatusDot { get; set; } = true;
+
     /// <summary>Default working directory for newly created sessions (empty = inherit current behavior).</summary>
     public string NewSessionDir { get; set; } = "";
 
@@ -204,7 +215,8 @@ public sealed class TerminalConfig
     public string NotificationColorNormal { get; set; } = "#F2B833";
     public string NotificationColorAttention { get; set; } = "#E64D3D";
 
-    /// <summary>Show a "+" on each sidebar workspace row to add a session there (agterm #233/#252). On by default.</summary>
+    /// <summary>Show the right-hand pair on each sidebar workspace row — the session count and the "+"
+    /// that adds a session there (agterm #233/#252). On by default; off gives the name the whole row.</summary>
     public bool WorkspaceAddButton { get; set; } = true;
 
     /// <summary>Individual title-bar button visibility (agterm #241 Interface tab). All on by default.</summary>
@@ -369,6 +381,12 @@ public sealed class TerminalConfig
         # Sidebar font size (pt) for workspace/session names (9..20).
         sidebar-font-size = 13
 
+        # Show session.context as a dimmed suffix on sidebar rows. False keeps it in the title bar only.
+        sidebar-context = true
+
+        # Show the agent-status dot at the right of each sidebar session row.
+        sidebar-status-dot = true
+
         # Default directory for new sessions (empty = current behavior).
         new-session-dir =
 
@@ -408,7 +426,7 @@ public sealed class TerminalConfig
         notification-color-normal = #F2B833
         notification-color-attention = #E64D3D
 
-        # Show a "+" on each sidebar workspace row to add a session in that workspace.
+        # Show the session count and the "+" at the right of each sidebar workspace row.
         workspace-add-button = true
 
         # Individual title-bar button visibility (Interface). Each on by default.
@@ -496,6 +514,8 @@ public sealed class TerminalConfig
                 case "window-opacity": if (int.TryParse(val, out var wo)) cfg.WindowOpacity = System.Math.Clamp(wo, 30, 100); break;
                 case "sidebar-tint": if (int.TryParse(val, out var st)) cfg.SidebarTint = System.Math.Clamp(st, -100, 100); break;
                 case "sidebar-font-size": if (int.TryParse(val, out var sfs)) cfg.SidebarFontSize = System.Math.Clamp(sfs, 9, 20); break;
+                case "sidebar-context": cfg.SidebarContext = ParseBool(val, cfg.SidebarContext); break;
+                case "sidebar-status-dot": cfg.SidebarStatusDot = ParseBool(val, cfg.SidebarStatusDot); break;
                 case "new-session-dir": cfg.NewSessionDir = val; break;
                 case "scroll-speed": if (int.TryParse(val, out var ss)) cfg.ScrollSpeed = System.Math.Clamp(ss, 1, 10); break;
                 case "omp-theme": cfg.OmpTheme = val; break;

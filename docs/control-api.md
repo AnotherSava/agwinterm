@@ -289,8 +289,10 @@ never reaches, so the restart that most needed the command was the restart guara
 
 `session context "<text>"` sets one line of **what a session is for**, shown dimmed after the name in
 the title bar and the sidebar row and on the session palette's second line, where a name has to stay
-short. It survives a restart and an undo-close, and `tree --json` carries it as `context` on the
-session node, so an agent that sets it when it starts a task leaves a note every other agent can read.
+short. `sidebar-context = false` drops the sidebar half without clearing the value, leaving the other
+two surfaces as they are. It survives a restart and an undo-close, and `tree --json` carries it as
+`context` on the session node, so an agent that sets it when it starts a task leaves a note every
+other agent can read.
 
 - It is one line by rule: a newline, tab or other control character is refused rather than drawn (the
   control-byte class from #213), blank is refused, and more than 200 characters is refused because
