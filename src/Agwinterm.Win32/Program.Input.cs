@@ -192,7 +192,7 @@ internal partial class Program
 
     /// <summary>Opt-in: add agwintermctl to the user PATH (agterm's "Install Command Line Tool").</summary>
     private void InstallCli() => RunInstaller(Agwinterm.Pty.CliInstaller.Install);
-    /// <summary>Opt-in: install Claude Code / Codex / generic agent status hooks.</summary>
+    /// <summary>Opt-in: install Claude Code / Codex / Devin / generic agent status hooks.</summary>
     private void InstallHooks() => RunInstaller(Agwinterm.Pty.AgentHooks.Install);
     /// <summary>Migrate pre-launcher Claude sessions: bind each pane to resume its current conversation.</summary>
     private void MakeClaudeResumable() => ShowToast(AdoptClaudeSessions(), 3200);

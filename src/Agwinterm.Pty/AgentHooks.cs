@@ -4,7 +4,7 @@ using System.Text.Json.Nodes;
 namespace Agwinterm.Pty;
 
 /// <summary>
-/// Installs Claude Code and Codex status hooks (agterm-style self-setup). Writes PowerShell
+/// Installs Claude Code, Codex and Devin status hooks (agterm-style self-setup). Writes PowerShell
 /// wrappers that push session status to agwinterm's control pipe, and idempotently merges the
 /// hooks into each agent's hook file. ~/.claude/settings.json:
 ///   UserPromptSubmit -> active, PostToolUse -> active, Stop -> completed,
@@ -26,6 +26,7 @@ public static class AgentHooks
     public static string CodexNotifyPath => Path.Combine(LocalAppData, "agwinterm", "agwinterm-codex-notify.ps1");
     public static string CodexHookPath => Path.Combine(LocalAppData, "agwinterm", "agwinterm-codex-hook.ps1");
     public static string CodexHooksPath => Path.Combine(Home, ".codex", "hooks.json");
+    public static string DevinConfigPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "devin", "config.json");
     public static string AgentBindPath => Path.Combine(LocalAppData, "agwinterm", "agwinterm-agent-bind.ps1");
 
     /// <summary>SessionStart handler for both agents: argv[0] is the agent, the event JSON (session_id,
@@ -167,6 +168,14 @@ public static class AgentHooks
         ("Stop", null, "stop"),
     };
 
+    private static readonly (string Event, string? Matcher, string State)[] DevinHooks =
+    {
+        ("UserPromptSubmit", null, "active"),
+        ("PostToolUse", null, "active"),
+        ("PermissionRequest", null, "blocked"),
+        ("Stop", null, "completed"),
+    };
+
     private static string Command(string wrapper, string state)
         => $"powershell -NoProfile -ExecutionPolicy Bypass -File \"{wrapper}\" {state}";
 
@@ -188,10 +197,14 @@ public static class AgentHooks
     public static string? MergeCodexHooks(string? existing, string script, string? bindScript = null)
         => MergeBind(MergeHooks(existing, script, CodexHooks), bindScript, "codex");
 
+    public static string? MergeDevinConfig(string? existing, string wrapper)
+        => MergeHooks(existing, wrapper, DevinHooks, allowJsonComments: true);
+
     private static string? MergeBind(string? merged, string? bindScript, string agent)
         => merged is null || bindScript is null ? merged : MergeHooks(merged, bindScript, new[] { ("SessionStart", (string?)null, agent) });
 
-    private static string? MergeHooks(string? existing, string wrapper, (string Event, string? Matcher, string State)[] table)
+    private static string? MergeHooks(string? existing, string wrapper, (string Event, string? Matcher, string State)[] table,
+        bool allowJsonComments = false)
     {
         JsonObject root;
         if (string.IsNullOrWhiteSpace(existing))
@@ -201,7 +214,12 @@ public static class AgentHooks
         else
         {
             JsonNode? parsed;
-            try { parsed = JsonNode.Parse(existing); }
+            var options = new System.Text.Json.JsonDocumentOptions
+            {
+                CommentHandling = allowJsonComments ? System.Text.Json.JsonCommentHandling.Skip : System.Text.Json.JsonCommentHandling.Disallow,
+                AllowTrailingCommas = allowJsonComments,
+            };
+            try { parsed = JsonNode.Parse(existing, documentOptions: options); }
             catch { return null; }
             if (parsed is not JsonObject obj) return null;
             root = obj;
@@ -250,6 +268,40 @@ public static class AgentHooks
         return false;
     }
 
+    internal static string InstallDevin(string configPath, string wrapper)
+    {
+        try
+        {
+            string? existing = File.Exists(configPath) ? File.ReadAllText(configPath) : null;
+            string? merged = MergeDevinConfig(existing, wrapper);
+            if (merged is null)
+                return "Devin: refused — %APPDATA%/devin/config.json exists but isn't valid JSON; left untouched";
+
+            Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
+            string? backup = null;
+            if (existing is not null && !string.Equals(existing, merged, StringComparison.Ordinal))
+            {
+                backup = NextBackupPath(configPath);
+                File.Copy(configPath, backup);
+                File.WriteAllText(configPath, merged);
+            }
+            else if (existing is null)
+                File.WriteAllText(configPath, merged);
+
+            string result = "Devin: status hooks -> " + configPath;
+            return backup is null ? result : "Devin: original config backup before JSONC rewrite -> " + backup + "\n" + result;
+        }
+        catch (Exception ex) { return "Devin: failed to install hooks: " + ex.Message; }
+    }
+
+    private static string NextBackupPath(string path)
+    {
+        string candidate = path + ".agwinterm.bak";
+        for (int suffix = 2; File.Exists(candidate); suffix++)
+            candidate = path + $".agwinterm-{suffix}.bak";
+        return candidate;
+    }
+
     /// <summary>Write the wrappers, merge the Claude and Codex hooks, and install the launcher and the
     /// generic bridge. Returns a multi-line human-readable summary covering every agent.</summary>
     public static string Install()
@@ -293,6 +345,8 @@ public static class AgentHooks
             }
         }
         catch (Exception ex) { lines.Add("Codex: failed to install hooks: " + ex.Message); }
+
+        lines.Add(InstallDevin(DevinConfigPath, WrapperPath));
 
         // --- Claude launcher: transparent `claude` wrapper (session-id binding + auto-resume) ---
         lines.Add("Claude launcher: " + ClaudeIntegration.Install());

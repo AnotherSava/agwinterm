@@ -83,6 +83,69 @@ public class AgentHooksTests
         Assert.Null(AgentHooks.MergeCodexHooks("{ not valid json", CodexScript));
     }
 
+    [Fact]
+    public void MergeDevin_UsesNativeLifecycleEventsAndPreservesConfig()
+    {
+        string existing = """
+            {
+              // Devin config supports JSON comments.
+              "version": 1,
+              "agent": { "model": "gpt-5-6-sol-medium" },
+              "hooks": { "Stop": [{ "hooks": [{ "type": "command", "command": "echo mine" }] }] },
+            }
+            """;
+        string once = AgentHooks.MergeDevinConfig(existing, Wrapper)!;
+        string twice = AgentHooks.MergeDevinConfig(once, Wrapper)!;
+        var root = JsonNode.Parse(twice)!.AsObject();
+        var hooks = root["hooks"]!.AsObject();
+        Assert.Equal(1, root["version"]!.GetValue<int>());
+        Assert.Equal("gpt-5-6-sol-medium", root["agent"]!["model"]!.GetValue<string>());
+        Assert.Equal(new[] { "Stop", "UserPromptSubmit", "PostToolUse", "PermissionRequest" }, hooks.Select(kv => kv.Key));
+        Assert.Equal(2, hooks["Stop"]!.AsArray().Count);
+        Assert.Single(hooks["UserPromptSubmit"]!.AsArray());
+        Assert.Single(hooks["PostToolUse"]!.AsArray());
+        Assert.Single(hooks["PermissionRequest"]!.AsArray());
+        Assert.EndsWith($"\"{Wrapper}\" active", hooks["UserPromptSubmit"]![0]!["hooks"]![0]!["command"]!.GetValue<string>());
+        Assert.EndsWith($"\"{Wrapper}\" active", hooks["PostToolUse"]![0]!["hooks"]![0]!["command"]!.GetValue<string>());
+        Assert.EndsWith($"\"{Wrapper}\" completed", hooks["Stop"]![1]!["hooks"]![0]!["command"]!.GetValue<string>());
+        Assert.EndsWith($"\"{Wrapper}\" blocked", hooks["PermissionRequest"]![0]!["hooks"]![0]!["command"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void MergeDevin_RefusesMalformedFile()
+    {
+        Assert.Null(AgentHooks.MergeDevinConfig("{ not valid json", Wrapper));
+    }
+
+    [Fact]
+    public void InstallDevin_BacksUpJsoncBeforeRewriteAndDoesNotRewriteAgain()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "agwinterm-devin-hooks-" + Guid.NewGuid().ToString("N"));
+        string config = Path.Combine(dir, "config.json");
+        string original = "{\n  // keep this note\n  \"version\": 1,\n}\n";
+        try
+        {
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(config, original);
+            string first = AgentHooks.InstallDevin(config, Wrapper);
+            string backup = config + ".agwinterm.bak";
+            Assert.Equal(original, File.ReadAllText(backup));
+            Assert.Contains("original config backup before JSONC rewrite", first);
+            Assert.Contains(backup, first);
+            string rewritten = File.ReadAllText(config);
+            Assert.Contains("UserPromptSubmit", rewritten);
+
+            string second = AgentHooks.InstallDevin(config, Wrapper);
+            Assert.Equal(rewritten, File.ReadAllText(config));
+            Assert.False(File.Exists(config + ".agwinterm-2.bak"));
+            Assert.DoesNotContain("backup", second);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        }
+    }
+
     private const string BindScript = @"C:\Users\x\AppData\Local\agwinterm\agwinterm-agent-bind.ps1";
 
     [Fact]
@@ -157,7 +220,7 @@ public class AgentHooksTests
     }
 
     [Fact]
-    public void GenericAgentRegex_CoversPiWithWordBoundarySafety()
+    public void GenericAgentRegex_CoversPiAndDevinWithWordBoundarySafety()
     {
         // agterm #208: Pi agent status. The bridge matches '^\s*(RE)\b', so 'pi' must be in the
         // default set — and the \b anchor means 'pip install' must NOT light the status.
@@ -165,6 +228,7 @@ public class AgentHooksTests
         string re = System.Text.RegularExpressions.Regex.Match(GenericAgentInstaller.Block,
             @"AGWINTERM_AGENT_RE = '([^']+)'").Groups[1].Value;
         Assert.Matches(@"^\s*(" + re + @")\b", "pi do something");
+        Assert.Matches(@"^\s*(" + re + @")\b", "devin");
         Assert.DoesNotMatch(@"^\s*(" + re + @")\b", "pip install requests");
     }
 

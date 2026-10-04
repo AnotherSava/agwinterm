@@ -57,9 +57,11 @@ They do **not** touch your `PATH`, profile, or config.
 Open the action palette (**Ctrl+Shift+P**) and run the **Install …** entries when you want them:
 
 - **Install Command-Line Tool (PATH)** — adds `agwintermctl` to your user `PATH` (so shells & AI agents can call it).
-- **Install Agent Status Hooks** — Claude Code / Codex / generic-agent status reporting, plus a
+- **Install Agent Status Hooks** — Claude Code / Codex / Devin / generic-agent status reporting, plus a
   transparent `claude` launcher that binds Claude's session id to the agwinterm pane so restart
-  auto-resumes the conversation.
+  auto-resumes the conversation. When an existing Devin JSONC config needs changes, its exact original
+  is kept in a numbered `.agwinterm.bak` sibling before the active config is rewritten as JSON without
+  comments or formatting.
 - **Install Agent Skill** — teaches agents to drive agwinterm via `agwintermctl`.
 - **Install Shell Integration** — a `$PROFILE` OSC-7 hook for live cwd (also works out of the box without this).
 

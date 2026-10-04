@@ -52,10 +52,10 @@ public static class AgentSkill
         `agwintermctl session status blocked --sound --blink`.
         (A default blocked cue can also be set once via `blocked-sound =` in the config.)
 
-        Better: run `agwintermctl install hooks` once. It wires Claude Code hooks so your status updates
-        automatically (active while working, blocked on permission prompts, completed on stop); merges the
-        same status hooks into Codex's ~/.codex/hooks.json (trust them once in Codex with /hooks); adds a
-        SessionStart hook to both so the pane resumes your exact session after a restart or reboot, in any shell;
+        Better: run `agwintermctl install hooks` once. It wires Claude Code, Codex and Devin hooks so your
+        status updates automatically (active while working, blocked on permission prompts, completed on stop);
+        trust the Codex hooks once with /hooks. It also adds a SessionStart hook to Claude and Codex so the pane
+        resumes your exact session after a restart or reboot, in any shell;
         and installs a generic PowerShell-profile bridge that marks any command matching `$env:AGWINTERM_AGENT_RE`
         active/completed.
 

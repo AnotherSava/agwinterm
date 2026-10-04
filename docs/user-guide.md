@@ -9,7 +9,10 @@
   double-click to jump in; or drive it with `agwintermctl dashboard <ids>`.
 - **Agent status** per session (idle / active / blocked / completed) as a colored dot and a title-bar
   bell, driven by your agent via hooks or the control API, with blink, auto-reset, and sounds. Run
-  `agwintermctl install hooks` (or the palette entry) once to wire Claude Code / Codex up.
+  `agwintermctl install hooks` (or the palette entry) once to wire Claude Code / Codex / Devin up.
+  When an existing Devin JSONC config needs changes, the installer keeps its exact original in a
+  numbered `.agwinterm.bak` sibling, then rewrites the active config as JSON without comments or
+  formatting.
 - **Claude Code and Codex session binding & auto-resume**: the same installer adds a `SessionStart`
   hook to both agents. Each time a session starts, resumes, is cleared or compacts, the hook tells
   agwinterm the live session id and directory, and agwinterm stores the line that resumes it in the
