@@ -1415,8 +1415,8 @@ internal partial class Program
         if (!OwnsSession(ses)) return;
         if (ses.Panes.Count >= 2) return;   // agterm model: strictly primary + one split (no 3+ panes)
         var cur = ses.ActivePane;
-        string? cwd = string.IsNullOrEmpty(cur.StartCwd) ? null : cur.StartCwd;
-        var np = CreatePane(Guid.NewGuid().ToString(), ses.Ws, cwd, cur.FontSize, profileName: ses.ProfileName);
+        string cwd = PaneCwd(cur);
+        var np = CreatePane(Guid.NewGuid().ToString(), ses.Ws, cwd.Length > 0 ? cwd : null, cur.FontSize, profileName: ses.ProfileName);
         np.FontZoomed = cur.FontZoomed;
         float half = cur.Ratio / 2f;
         cur.Ratio = half; np.Ratio = half;

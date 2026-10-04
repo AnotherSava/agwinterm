@@ -505,6 +505,46 @@ try {
     Invoke-Ctl @('session', 'close', $scId) | Out-Null
     $scId = $null
 
+    # A split opens where the pane is NOW, not where it was launched: two agents side by side that
+    # share files in one folder must not start in two. The shell reports its cwd with OSC 9;9 (what
+    # a prompt hook sends), the marker after it on the same output proves the report was parsed, and
+    # the new pane prints its own location. Leaf names only: a long temp path wraps in a half pane.
+    # Both markers are split in the typed text, so its echo never satisfies the wait.
+    $cwdTag = [guid]::NewGuid().ToString('N').Substring(0, 8)
+    $cwdRoot = Join-Path ([IO.Path]::GetTempPath()) ("agw-split-cwd-$cwdTag")
+    $cwdHere = Join-Path $cwdRoot "here-$cwdTag"
+    New-Item -ItemType Directory -Force -Path $cwdHere | Out-Null
+    $cwdMade = Invoke-Ctl @('session', 'new', '--name', 'split-live-cwd', '--cwd', $cwdRoot, '--no-select')
+    $cwdId = [string]$cwdMade.result
+    for ($i = 0; $i -lt 30 -and -not (Get-SessionSnapshot $cwdId); $i++) { Start-Sleep -Milliseconds 200 }
+    $cwdMarker = "cwd-reported-$cwdTag"
+    $cwdReported = $false
+    foreach ($attempt in 1, 2, 3) {   # typed input can be dropped while the shell starts: type again
+        Invoke-Ctl @('session', 'type', "Set-Location -LiteralPath '$cwdHere'; [Console]::Write([char]27 + ']9;9;' + (Get-Location).Path + [char]7); Write-Output ('cwd-reported-' + '$cwdTag')`r", '--target', $cwdId) | Out-Null
+        for ($i = 0; $i -lt 16; $i++) {
+            Start-Sleep -Milliseconds 250
+            if (([string](Invoke-Ctl @('session', 'text', '--target', $cwdId)).result).Contains($cwdMarker)) { $cwdReported = $true; break }
+        }
+        if ($cwdReported) { break }
+    }
+    $cwdSplit = Invoke-Ctl @('session', 'split', 'on', '--target', $cwdId)
+    $cwdPane = [string]$cwdSplit.result
+    $cwdSeen = ''
+    foreach ($attempt in 1, 2, 3) {
+        Invoke-Ctl @('session', 'type', "Write-Output ('C' + 'WD=' + (Split-Path -Leaf (Get-Location).Path))`r", '--target', $cwdPane) | Out-Null
+        for ($i = 0; $i -lt 16; $i++) {
+            Start-Sleep -Milliseconds 250
+            $cwdSeen = [string](Invoke-Ctl @('session', 'text', '--target', $cwdPane)).result
+            if ($cwdSeen -match 'CWD=\S+') { break }
+        }
+        if ($cwdSeen -match 'CWD=\S+') { break }
+    }
+    Check 'a split pane starts in the live cwd of the pane it splits, not its launch dir' `
+        ($cwdMade.ok -and $cwdReported -and $cwdSplit.ok -and $cwdPane -and $cwdSeen.Contains("CWD=here-$cwdTag")) `
+        "reported=$cwdReported split=$($cwdSplit | ConvertTo-Json -Compress) seen=$([regex]::Match($cwdSeen, 'CWD=\S*').Value)"
+    Invoke-Ctl @('session', 'close', $cwdId) | Out-Null
+    Remove-Item -LiteralPath $cwdRoot -Recurse -Force -ErrorAction SilentlyContinue
+
     if ($survivorId) {
         # While both meanings exist, an exact pane id has priority over the same exact session id.
         # The newly split pane is active, so resolving as a session here would modify the wrong side.
