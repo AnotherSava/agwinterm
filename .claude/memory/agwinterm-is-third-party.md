@@ -23,5 +23,6 @@ fix made here that the upstream maintainer never hears about.
 nowhere else — it reaches upstream only as a cherry-pick onto a topic branch off `upstream/main`,
 and only when the user asks for a PR. When a real defect turns up, file it upstream with
 `gh issue create --repo yeroo/agwinterm` after checking for duplicates —
-that is how #189, #352 and #353 were filed. Fix the *user's machine* (config, fonts,
+that is how #189, #352, #353 and #361 were filed. The user's first upstream PR is #362
+(2026-10-09), so CONTRIBUTING's first-PR rule no longer applies to them. Fix the *user's machine* (config, fonts,
 installs) rather than the *source*, unless they explicitly ask for a patch or a PR.
