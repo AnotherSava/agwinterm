@@ -12,13 +12,15 @@ as a rebase conflict instead of a dirty tree. Anything proposed upstream is cher
 a fresh topic branch off `upstream/main`, which is also why `.claude/` can be committed on
 `local` without ever riding a pull request.
 
-Three patches sit on that branch, each tracked by an upstream issue or memo — see the backlog in
-`.claude/memos/`, one file per memo:
+Each patch on that branch is tracked by an upstream issue, a PR or a memo (the backlog is
+`.claude/memos/`, one file per memo). Among them:
 
 - drop `wsl` from the hardcoded restore denylist, so a `wsl`-wrapped launcher can be captured
 - gate the left-button forward on `MouseReportsMotion` rather than `MouseReporting`, so an app
   that requested only DECSET 1000 leaves the drag to the terminal
 - clear the selection when the wheel is forwarded to the app
+- inset a maximized window by the frame at the window's own DPI, not the system DPI
+  (yeroo/agwinterm#361, PR #362)
 
 **Building and installing is `bash scripts/deploy.sh`, and that wrapper is gitignored.** It is a
 per-machine artifact covered by the global excludes, so a fresh clone has none and it has to be
