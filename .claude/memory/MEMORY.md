@@ -7,3 +7,4 @@
 - [Deploy takes the machine](agwinterm-deploy-takes-the-machine.md) — `scripts/deploy.sh` closes the terminal the user works inside; ask every time, with the ~10s duration
 - [The update check is blind here](agwinterm-fork-update-check-blind.md) — the fork's fourth version part makes agwinterm always say it is up to date; ask git about upstream, not the palette
 - [Rename gestures](agwinterm-rename-gestures.md) — F2 renames only the active session; a workspace row needs double-click or right-click → Rename
+- [Claude drawn at 80 columns](claude-80-column-frame.md) — open bug, not agwinterm's; tmux size-logging hooks live in WSL ~/.tmux.conf until it recurs
