@@ -21,3 +21,9 @@ and nothing under that home mentions `set-titles`. Both options therefore live o
 running server's state, set over the wire by something outside WSL. When sidebar rows go back to
 reading as directory basenames, check `tmux show-options -g | grep set-titles` before looking at
 anything in agwinterm.
+
+**A row named after a different Claude conversation is Claude Code's agent view, not agwinterm.**
+Seen 2026-11-04: a tab's own conversation was parked with ← on an empty prompt and another one
+picked from the list, which put that other conversation in the tab and retitled it, so the row
+read as the other project. The user then set `disableAgentView: true` in the global settings. If
+the symptom comes back, check whether that setting is still there before suspecting agwinterm.
