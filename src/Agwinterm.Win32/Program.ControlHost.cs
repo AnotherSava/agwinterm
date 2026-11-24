@@ -228,7 +228,8 @@ internal partial class Program
                         // The program title, reported even when a custom name hides it in the chrome:
                         // a caller tracking what a user left needs what the session IS, not what some
                         // other tool called it.
-                        Title: MeaningfulOscTitle(s.ActivePane));
+                        Title: MeaningfulOscTitle(s.ActivePane),
+                        ExitedPanes: s.Panes.Where(p => p.S.HasExited).Select(p => p.Id).ToList());
                 }).ToList()
             , Collapsed: !w.Expanded, DefaultDir: w.DefaultDir)).ToList();
     }

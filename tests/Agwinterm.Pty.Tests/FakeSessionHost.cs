@@ -62,6 +62,10 @@ internal sealed class FakeSessionHost : ISessionHost
         /// seeds it; the tree's <c>paneCwds</c> is built from here. A pane absent here has an unknown
         /// directory, which the app spells "" and the tree omits.</summary>
         public readonly Dictionary<string, string> Cwds = new();
+        /// <summary>The ids of panes whose process has exited — the fake's stand-in for the app's
+        /// Pane.S.HasExited, since the fake's panes are never started. A test seeds it; the tree's
+        /// <c>exitedPanes</c> is built from here, in pane order.</summary>
+        public readonly HashSet<string> Exited = new();
         /// <summary>Whether <see cref="Name"/> came from a rename, so the reply can say null after a
         /// clear the way the app's CustomName does. The app keeps two fields; the fake keeps one and a flag.</summary>
         public bool Custom;
@@ -336,7 +340,7 @@ internal sealed class FakeSessionHost : ISessionHost
                 Axis: s.Axis,
                 PaneOverlays: s.PaneOverlayWords(), Hud: s.Hud, ForegroundShells: s.ForegroundShells,
                 PaneCwds: s.PaneIds.Select(id => s.Cwds.TryGetValue(id, out var cwd) ? cwd : "").ToList(),
-                Title: s.Title);
+                Title: s.Title, ExitedPanes: s.PaneIds.Where(s.Exited.Contains).ToList());
         }).ToList(), Collapsed: w.Collapsed, DefaultDir: w.DefaultDir)).ToList();
 
     public WindowStateSnapshot WindowState() =>

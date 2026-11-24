@@ -562,6 +562,12 @@ public sealed class ControlServer : IDisposable
                 // and the id is the point: this is how a tool outside agwinterm tells which pane holds
                 // which project, when nothing inside the pane can say.
                 AppendPaneMap(sb, "paneCwds", n.PaneCwds, n.PaneIds);
+                // exitedPanes: the ids of panes whose process has exited, only when there is one. An
+                // exited pane stays on screen and its foregroundShells entry is null, which is also what
+                // a live non-shell program reports, so without this a caller waiting for a program to
+                // end cannot tell it has.
+                if (n.ExitedPanes is { Count: > 0 } exited)
+                    sb.Append(",\"exitedPanes\":").Append(JsonSerializer.Serialize(exited));
                 if (n.PaneCount > 1)
                 {
                     sb.Append(",\"paneCount\":").Append(n.PaneCount).Append(",\"focusedPane\":").Append(n.FocusedPane);

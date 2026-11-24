@@ -83,6 +83,11 @@ public static class AgentSkill
           hides the project from everything running inside it: this is how a tool outside agwinterm matches a
           pane to a project when nothing in the pane can name its own pane. Keyed by id rather than in pane
           order (like `foregroundShells`) because `paneIds` is emitted only while a session is split.
+          `exitedPanes` = the ids of the panes whose process has exited, absent when none has. An exited pane
+          stays on screen with a null `foregroundShells` entry, which a live non-shell program also reports,
+          so this is how a caller waiting for a program to end sees that it has. The exit is observed a
+          moment after it happens. Ids as in `paneCwds`: an unsplit session's pane id is usually the session
+          id, but not after its original pane was closed out of a split.
         - `agwintermctl events [--since CURSOR] [--limit N]`      — poll the event log (status/notification/session/tree changes); returns {cursor, events:[{seq,type,session,info}]}. Pass the returned cursor as --since next poll.
         - `agwintermctl session new [--name N] [--cwd DIR] [--workspace ID|--workspace-name NAME [--create-workspace]] [--command "PowerShell code"] [--command-mode powershell|direct] [--profile NAME] [--no-select] [--wait]`
           `--no-select` creates the session in the background without stealing focus or changing the current selection.

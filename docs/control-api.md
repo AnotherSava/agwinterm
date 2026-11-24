@@ -165,6 +165,22 @@ a later `cd` does not move it. That is the launch directory the title bar falls 
 the title bar shows a live OSC 7 cwd without testing that it exists — the field does, so the two can
 differ on a directory that has been deleted under the shell.
 
+## `exitedPanes` in `tree --json`
+
+agwinterm keeps a pane on screen after its process exits. Its `foregroundShells` entry then reads
+`null`, the same as a live program other than a shell, so the rest of the node cannot say whether a
+program you are waiting on has ended. A tab whose direct command is a `wsl … tmux attach` client is
+the common case: when the tmux session ends, the client exits and the tab stays.
+
+Each session node with an exited pane carries `exitedPanes`, an array of those pane ids. A session
+with none omits the key. The exit is observed a moment after it happens, so poll rather than reading
+it once straight after stopping a program.
+
+The entries are pane ids, keyed like `paneCwds`, because `paneIds` is emitted only while a session is
+split. An unsplit session's pane id is usually the session id, but not once its original pane has been
+closed out of a split, so match against the `paneCwds` keys or treat any entry on an unsplit session
+as its one pane.
+
 ## `version`
 
 Prints two greppable lines: the `cli` that ran (version and its resolved path — several
