@@ -19,8 +19,9 @@ Each patch on that branch is tracked by an upstream issue, a PR or a memo (the b
 - gate the left-button forward on `MouseReportsMotion` rather than `MouseReporting`, so an app
   that requested only DECSET 1000 leaves the drag to the terminal
 - clear the selection when the wheel is forwarded to the app
-- inset a maximized window by the frame at the window's own DPI, not the system DPI
-  (yeroo/agwinterm#361, PR #362)
+
+The maximized-window DPI inset (yeroo/agwinterm#361) left this list when upstream merged PR #362
+as fe4d063; the 2026-11-09 rebase onto upstream dropped the fork's copy as patch-identical.
 
 **Building and installing is `bash scripts/deploy.sh`, and that wrapper is gitignored.** It is a
 per-machine artifact covered by the global excludes, so a fresh clone has none and it has to be
