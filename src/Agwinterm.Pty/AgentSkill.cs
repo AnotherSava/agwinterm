@@ -396,8 +396,10 @@ public static class AgentSkill
         - `agwintermctl session tint {{{SessionTints.ColorWords}}} [--on name] [--target <id>]`
           — colour a session's NAME in the sidebar (persists; reads back as `tint`/`tintOn` on the tree node, a moment
           after the reply — the write is queued onto the UI thread, so re-read `tree` if it still looks unset).
-          `clear` removes it. The vocabulary is a subset of agterm's verb (agterm adds teal, pink, brown, indigo, mint
-          and a #rrggbb hex), so one caller drives both terminals while it stays inside this list, but
+          `clear` removes it, and a #rrggbb hex works anywhere a name does (# optional, exactly six digits, read back
+          lowercase; unlike a name it is literal and does not re-pick itself for a light or dark sidebar).
+          The named set is a subset of agterm's (agterm also has teal, pink, brown, indigo, mint), so one
+          caller drives both terminals while it stays inside this list, but
           `--on icon` is refused here: the left gutter is the flag marker's and the status dot is rewritten by
           the status hooks, so a colour put there would not survive. Status is NOT this — keep reporting it
           with `session status`, which owns the dot; a tint is for something about the session that does not

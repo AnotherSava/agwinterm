@@ -159,6 +159,93 @@ public class SessionTintTests
         Assert.Equal(SessionTints.NoSession, Error(reply));
     }
 
+    [Theory]
+    [InlineData("#1e90ff", "#1e90ff")]
+    [InlineData("1e90ff", "#1e90ff")]   // the # is optional
+    [InlineData("#1E90FF", "#1e90ff")]  // and the case is not the caller's to pick
+    [InlineData("#FFFFFF", "#ffffff")]
+    [InlineData("000000", "#000000")]
+    public void HexIsAcceptedAndStoredLowercaseWithItsHash(string sent, string stored)
+    {
+        var (server, _) = New();
+
+        Assert.True(Ok(Tint(server, sent)), sent + " was refused");
+
+        var s = TreeSession(server);
+        Assert.Equal(stored, s.GetProperty("tint").GetString());
+        Assert.Equal("name", s.GetProperty("tintOn").GetString());
+    }
+
+    [Theory]
+    [InlineData("#abc")]        // CSS shorthand is refused, not expanded
+    [InlineData("#abcd")]
+    [InlineData("#abcdefa")]
+    [InlineData("#abcdeg")]     // g is not a hex digit
+    [InlineData("##abcdef")]
+    [InlineData("#")]
+    public void AMalformedHexIsRefused_AndLeavesTheSessionUntinted(string sent)
+    {
+        var (server, _) = New();
+        Tint(server, "red");
+
+        string reply = Tint(server, sent);
+
+        Assert.False(Ok(reply), sent + " was accepted");
+        Assert.Equal(SessionTints.UnknownColor, Error(reply));
+        Assert.Equal("red", TreeSession(server).GetProperty("tint").GetString());
+    }
+
+    [Fact]
+    public void AHexPaintsItsLiteralColor_OnEitherSidebar()
+    {
+        // Unlike a palette name, a hex does not re-pick itself for the sidebar's luminance: it is
+        // the colour the caller asked for. agterm behaves the same way, which is the reason to.
+        var dark = SessionTints.Paint("#1e90ff", onLight: false);
+        var light = SessionTints.Paint("#1e90ff", onLight: true);
+
+        Assert.Equal(new SessionTints.Rgb(0x1E, 0x90, 0xFF), dark);
+        Assert.Equal(dark, light);
+    }
+
+    [Fact]
+    public void ANamedColorStillRepicksItselfForTheSidebar()
+    {
+        Assert.NotEqual(SessionTints.Paint("purple", onLight: false),
+                        SessionTints.Paint("purple", onLight: true));
+    }
+
+    [Fact]
+    public void HexIsRefusedOverASurfaceTheRowCannotPaint()
+    {
+        var (server, _) = New();
+
+        string reply = Tint(server, "#1e90ff", "icon");
+
+        Assert.False(Ok(reply));
+        Assert.Equal(SessionTints.IconUnavailable, Error(reply));
+        Assert.False(TreeSession(server).TryGetProperty("tint", out _));
+    }
+
+    [Fact]
+    public void ClearRemovesAHexToo()
+    {
+        var (server, _) = New();
+        Tint(server, "#1e90ff");
+
+        Assert.True(Ok(Tint(server, "clear")));
+
+        Assert.False(TreeSession(server).TryGetProperty("tint", out _));
+    }
+
+    [Fact]
+    public void TheAdvertisedVocabularyNamesTheHexForm()
+    {
+        // ColorWords is what the CLI's refusal and the agent skill spell out; a hex accepted by
+        // the verb and absent from that string is a colour no caller learns it may pass.
+        Assert.Contains(SessionTints.HexWord, SessionTints.ColorWords);
+        Assert.Contains(SessionTints.HexWord, SessionTints.UnknownColor);
+    }
+
     [Fact]
     public void ColorIsCaseInsensitive_SinceTheReplyNormalizesIt()
     {

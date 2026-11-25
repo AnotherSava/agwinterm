@@ -189,7 +189,7 @@ as its one pane.
 Colours a session's name in the sidebar:
 
 ```
-agwintermctl session tint <red|orange|yellow|green|blue|purple|gray|clear> [--on name] [--target ID]
+agwintermctl session tint <red|orange|yellow|green|blue|purple|gray|clear|#rrggbb> [--on name] [--target ID]
 ```
 
 The colour survives a relaunch and a close→reopen, and reads back from `tree --json` as `tint` on
@@ -197,6 +197,13 @@ the session node, with `tintOn` naming the surface it paints. An untinted sessio
 and `clear` removes them rather than storing a colour that means no colour. The word is normalized,
 so `PURPLE` and `purple` are the same request; anything outside the list is refused and leaves the
 existing tint alone.
+
+A `#rrggbb` hex is accepted anywhere a name is, with the `#` optional and the case irrelevant, and
+is stored and read back as lowercase with the `#`. It must carry exactly six digits: `#abc` is
+refused rather than expanded. A named colour is re-picked for the sidebar's own luminance, since
+the hues that read on a dark background wash out on a light one; a hex is the literal colour asked
+for and does no such thing, so one chosen against a dark sidebar can read poorly against a light
+one.
 
 The reply names the colour requested. The write itself is queued onto the UI thread, while `tree` is
 answered on the pipe thread, so a `tree` that arrives before that queue drains still reports the
@@ -206,8 +213,8 @@ thread is busy saving state, painting or spawning a session — from a separate
 first read as final.
 
 The vocabulary is a subset of agterm's verb of the same name, so a caller written for agterm can
-drive both terminals as long as it stays inside this list: agterm adds `teal`, `pink`, `brown`,
-`indigo` and `mint`, and accepts a `#rrggbb` hex, none of which agwinterm takes. `gray` is spelled
+drive both terminals as long as it stays inside this list: agterm also has `teal`, `pink`, `brown`,
+`indigo` and `mint`, which agwinterm deliberately does not take. `gray` is spelled
 the same way in both, and neither accepts `grey`. The two also differ on `--on`: agterm paints the
 icon, the name or both and defaults to the icon, while agwinterm accepts only `name`.
 Passing `icon` is refused with its reason rather than accepted and ignored, because the two

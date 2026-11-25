@@ -437,8 +437,8 @@ switch (area)
                 break;
             case "focus": cargs["dir"] = rest.Count > 0 ? rest[0] : "other"; break; // primary|split|left|right|top|bottom|other — `other` is the one word valid on either axis
             case "flag": cargs["op"] = rest.Count > 0 ? rest[0] : "toggle"; break; // on|off|toggle|clear
-            case "tint": // a colour from SessionTints.Colors, or clear [--on name]
-                if (rest.Count == 0) { Console.Error.WriteLine("session tint needs a colour: " + string.Join('|', Agwinterm.Pty.SessionTints.Colors)); return 2; }
+            case "tint": // a colour from SessionTints.Colors, a #rrggbb hex, or clear [--on name]
+                if (rest.Count == 0) { Console.Error.WriteLine("session tint needs a colour: " + Agwinterm.Pty.SessionTints.ColorWords); return 2; }
                 cargs["tint"] = rest[0];
                 if (Opt("on") is { } tintOn) cargs["on"] = tintOn;
                 break;

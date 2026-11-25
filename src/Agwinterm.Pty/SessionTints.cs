@@ -7,8 +7,9 @@ namespace Agwinterm.Pty;
 /// <c>tree</c> as <c>tint</c> and <c>tintOn</c>, set via <c>session.tint</c>.
 ///
 /// The vocabulary is a subset of agterm's <c>session tint</c>, so one caller can drive both
-/// terminals as long as it stays inside this list — agterm adds teal, pink, brown, indigo, mint
-/// and a #rrggbb hex, none of which are taken here.
+/// terminals as long as it stays inside this list — agterm's five 0.41.0 names (teal, pink,
+/// brown, indigo, mint) are deliberately not taken here, while its <c>#rrggbb</c> hex is.
+/// The user settled that split on 2026-11-24: hex yes, the five extra names no.
 /// <see cref="DefaultOn"/> is where the two differ: agwinterm has no free per-session icon lane —
 /// the left gutter belongs to the flag marker and the status dot is rewritten by the agent status
 /// hooks on every tool call — so only <c>name</c> is accepted here and <c>icon</c> is refused
@@ -44,11 +45,20 @@ public static class SessionTints
         ("gray",   0x9EA6B0, 0x6B737D),
     ];
 
-    /// <summary>The accepted colours. <c>clear</c> removes the tint and is not stored.</summary>
+    /// <summary>The accepted colours. <c>clear</c> removes the tint and is not stored. A
+    /// <see cref="HexWord"/> is accepted too and is not in this list, since it is a shape rather
+    /// than a word — <see cref="NormalizeColor"/> is the one place both are decided.</summary>
     public static readonly string[] Colors = [.. Palette.Select(p => p.Name), Clear];
 
-    /// <summary>The vocabulary as a caller reads it in usage text: <c>red|orange|…|clear</c>.</summary>
-    public static readonly string ColorWords = string.Join('|', Colors);
+    /// <summary>How the hex form is spelled wherever the vocabulary is advertised.</summary>
+    public const string HexWord = "#rrggbb";
+
+    /// <summary>The digit count a hex tint must have, exactly. <c>#abc</c> is refused rather than
+    /// expanded, matching agterm, so a caller cannot get a colour it did not name.</summary>
+    private const int HexDigits = 6;
+
+    /// <summary>The vocabulary as a caller reads it in usage text: <c>red|…|clear|#rrggbb</c>.</summary>
+    public static readonly string ColorWords = string.Join('|', Colors) + "|" + HexWord;
 
     /// <summary>A sidebar colour, as 8-bit components.</summary>
     public readonly record struct Rgb(byte R, byte G, byte B);
@@ -57,10 +67,14 @@ public static class SessionTints
     /// The colour a stored tint paints with, or null when the session has no tint. The argument is
     /// the stored value, so <c>clear</c> and a name this build does not know both answer null and
     /// leave the row in its ordinary colour.
+    /// A hex tint ignores <paramref name="onLight"/>: it is the literal colour the caller asked
+    /// for, which is what agterm does too, so unlike a palette name it does not re-pick itself for
+    /// the theme and a hex chosen against one sidebar can read poorly against the other.
     /// </summary>
     public static Rgb? Paint(string? tint, bool onLight)
     {
         if (string.IsNullOrEmpty(tint)) return null;
+        if (ParseHex(tint) is { } hex) return hex;
         foreach (var p in Palette)
             if (string.Equals(p.Name, tint, StringComparison.Ordinal))
             {
@@ -88,7 +102,8 @@ public static class SessionTints
     public const string NoSession = "session not found; nothing changed";
 
     public static readonly string UnknownColor =
-        "session tint: unknown colour. Pass one of " + string.Join(", ", Colors) + ". Nothing changed.";
+        "session tint: unknown colour. Pass one of " + string.Join(", ", Colors) + ", or a " +
+        HexWord + " (exactly " + HexDigits + " hex digits, the # optional). Nothing changed.";
 
     public const string IconUnavailable =
         "session tint: agwinterm has no free per-session icon lane — the left gutter is the flag marker's " +
@@ -97,11 +112,37 @@ public static class SessionTints
     public static readonly string UnknownSurface =
         "session tint: --on accepts only " + DefaultOn + " here. Nothing changed.";
 
-    /// <summary>Normalize a colour; null when it is not one of <see cref="Colors"/>.</summary>
+    /// <summary>
+    /// Normalize a colour; null when it is neither one of <see cref="Colors"/> nor a hex. A hex
+    /// comes back lowercase and with its <c>#</c>, whatever the caller passed, so the stored value
+    /// and the <c>tree</c> readback have one spelling per colour.
+    /// </summary>
     public static string? NormalizeColor(string raw)
     {
         string c = raw.Trim().ToLowerInvariant();
-        return Array.IndexOf(Colors, c) >= 0 ? c : null;
+        if (Array.IndexOf(Colors, c) >= 0) return c;
+        return ParseHex(c) is null ? null : (c[0] == '#' ? c : "#" + c);
+    }
+
+    /// <summary>The colour a hex tint names, or null when the text is not one. Accepts the
+    /// <c>#</c> or not and demands exactly <see cref="HexDigits"/> digits, so a CSS shorthand is
+    /// refused rather than expanded into a colour the caller did not write.</summary>
+    private static Rgb? ParseHex(string text)
+    {
+        ReadOnlySpan<char> d = text.AsSpan();
+        if (d.Length > 0 && d[0] == '#') d = d[1..];
+        if (d.Length != HexDigits) return null;
+        int v = 0;
+        foreach (char ch in d)
+        {
+            int n = ch is >= '0' and <= '9' ? ch - '0'
+                  : ch is >= 'a' and <= 'f' ? ch - 'a' + 10
+                  : ch is >= 'A' and <= 'F' ? ch - 'A' + 10
+                  : -1;
+            if (n < 0) return null;
+            v = (v << 4) | n;
+        }
+        return new Rgb((byte)(v >> 16), (byte)(v >> 8), (byte)v);
     }
 
     /// <summary>
