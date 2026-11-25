@@ -5,10 +5,11 @@ namespace Agwinterm.Pty.Tests;
 /// <summary>
 /// <c>session.tint</c>: the caller-chosen sidebar colour, and what the tree reports about it.
 ///
-/// The vocabulary matches agterm's verb of the same name so one caller can drive both terminals.
+/// The vocabulary is a subset of agterm's verb of the same name, so one caller can drive both
+/// terminals while it stays inside this list.
 /// Where the two differ is <c>--on</c>: agwinterm has no free per-session icon lane, so <c>icon</c>
-/// is refused rather than accepted and silently ignored — a caller written against agterm's default
-/// has to learn that here, not by staring at an untinted row.
+/// is refused rather than accepted and silently ignored — agterm defaults an untinted session to the
+/// icon, so a caller written against it has to learn that here, not by staring at an untinted row.
 /// </summary>
 public class SessionTintTests
 {

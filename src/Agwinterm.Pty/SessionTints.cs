@@ -6,7 +6,9 @@ namespace Agwinterm.Pty;
 /// Rules for a session's sidebar tint — a colour chosen by the caller, persisted, exposed on
 /// <c>tree</c> as <c>tint</c> and <c>tintOn</c>, set via <c>session.tint</c>.
 ///
-/// The vocabulary matches agterm's <c>session tint</c> so one caller can drive both terminals.
+/// The vocabulary is a subset of agterm's <c>session tint</c>, so one caller can drive both
+/// terminals as long as it stays inside this list — agterm adds teal, pink, brown, indigo, mint
+/// and a #rrggbb hex, none of which are taken here.
 /// <see cref="DefaultOn"/> is where the two differ: agwinterm has no free per-session icon lane —
 /// the left gutter belongs to the flag marker and the status dot is rewritten by the agent status
 /// hooks on every tool call — so only <c>name</c> is accepted here and <c>icon</c> is refused
@@ -107,7 +109,8 @@ public static class SessionTints
     /// handed back: every surface that survives this is <see cref="DefaultOn"/>, which
     /// <see cref="OnFor"/> derives from the colour instead.
     /// An <c>icon</c> anywhere in the list refuses with <see cref="IconUnavailable"/>, so a caller
-    /// written against agterm's default learns why instead of seeing a tint that never appears.
+    /// written against agterm learns why instead of seeing a tint that never appears — agterm
+    /// defaults an untinted session to the icon, which is the one surface unavailable here.
     /// </summary>
     public static string? ValidateOn(string? raw)
     {

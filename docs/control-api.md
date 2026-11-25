@@ -205,8 +205,11 @@ thread is busy saving state, painting or spawning a session — from a separate
 `agwintermctl tree --json` started right after the verb returned. Read it again rather than take the
 first read as final.
 
-The vocabulary matches agterm's verb of the same name, so one caller can drive both terminals. The
-two differ on `--on`: agterm paints the icon, the name or both, while agwinterm accepts only `name`.
+The vocabulary is a subset of agterm's verb of the same name, so a caller written for agterm can
+drive both terminals as long as it stays inside this list: agterm adds `teal`, `pink`, `brown`,
+`indigo` and `mint`, and accepts a `#rrggbb` hex, none of which agwinterm takes. `gray` is spelled
+the same way in both, and neither accepts `grey`. The two also differ on `--on`: agterm paints the
+icon, the name or both and defaults to the icon, while agwinterm accepts only `name`.
 Passing `icon` is refused with its reason rather than accepted and ignored, because the two
 per-session marks in this sidebar are already spoken for — the left gutter carries the flag marker,
 and the status dot is rewritten by the agent status hooks on every tool call, so a colour put there
