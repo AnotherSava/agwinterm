@@ -1577,10 +1577,12 @@ internal partial class Program
 
     /// <summary>A recently-closed session's restorable identity (IDE "reopen closed" / browser Ctrl+Shift+T).
     /// SessionId is the original id, reused on reopen so control-API/agent references stay stable.
-    /// Context is the session.context text (P3) — it rides here so `session reopen` brings it back.</summary>
+    /// Context is the session.context text (P3) — it rides here so `session reopen` brings it back.
+    /// Tint rides here for the same reason: it is a durable control-API mark on a session the caller
+    /// chose, so an accidental close must not drop it (SessionTints.OnFor derives the surface).</summary>
     private sealed record ClosedSession(string? CustomName, string? ProfileName, string Cwd,
         string WorkspaceId, string WorkspaceName, bool Flagged, string Display, string Name,
-        string SessionId = "", long Seq = 0, string? Context = null);
+        string SessionId = "", long Seq = 0, string? Context = null, string? Tint = null);
     /// <summary>A recently-closed workspace (its name + all its sessions), so it can be reopened whole.
     /// WorkspaceId is the original id, reused on reopen to keep it stable across close→reopen.</summary>
     private sealed record ClosedWorkspace(string Name, IReadOnlyList<ClosedSession> Sessions, long Seq, string WorkspaceId = "", string? DefaultDir = null);
@@ -1598,7 +1600,7 @@ internal partial class Program
         string display = !string.IsNullOrEmpty(ses.CustomName) ? ses.CustomName!
             : (!string.IsNullOrEmpty(cwd) ? Path.GetFileName(cwd.TrimEnd('\\', '/')) : ses.Name);
         if (string.IsNullOrEmpty(display)) display = ses.Name;
-        return new ClosedSession(ses.CustomName, ses.ProfileName, cwd, ses.Ws.Id, ses.Ws.Name, ses.Flagged, display, ses.Name, ses.Id, ++_closeSeq, ses.Context);
+        return new ClosedSession(ses.CustomName, ses.ProfileName, cwd, ses.Ws.Id, ses.Ws.Name, ses.Flagged, display, ses.Name, ses.Id, ++_closeSeq, ses.Context, ses.Tint);
     }
 
     /// <summary>Remember a session's identity so it can be reopened after it's closed.</summary>
@@ -1659,8 +1661,21 @@ internal partial class Program
         else ReopenClosedSession();
     }
 
+    /// <summary>Put a closed session's marks back on the recreated row — the rename, the flag, and the
+    /// durable control-API marks (session.context, session.tint). One place because the session reopen
+    /// and the whole-workspace reopen must bring back the same set: a mark carried by only one of them
+    /// survives an undo-close and vanishes when the workspace is reopened instead.</summary>
+    private static void RestoreClosedMarks(Ses ses, ClosedSession c)
+    {
+        if (!string.IsNullOrEmpty(c.CustomName)) { ses.CustomName = c.CustomName; ses.Name = c.CustomName!; } // mirror rename
+        else if (!string.IsNullOrEmpty(c.Name)) ses.Name = c.Name;   // restore the original label
+        if (c.Flagged) ses.Flagged = true;
+        ses.Context = c.Context;   // session.context comes back with the session (P3)
+        ses.Tint = c.Tint;
+    }
+
     /// <summary>Reopen the most recently closed session (or a specific one) — restoring its profile, cwd,
-    /// custom name and flag, in its original workspace if it still exists.</summary>
+    /// custom name, flag and control-API marks, in its original workspace if it still exists.</summary>
     private void ReopenClosedSession(ClosedSession? which = null)
     {
         ClosedSession c;
@@ -1675,15 +1690,13 @@ internal partial class Program
                  ?? ActiveWorkspace();
         string? cwd = !string.IsNullOrEmpty(c.Cwd) && Directory.Exists(c.Cwd) ? c.Cwd : null;
         var ses = CreateSession(StableSessionId(c.SessionId), null, cwd, ws, makeActive: true, profileName: c.ProfileName);
-        if (!string.IsNullOrEmpty(c.CustomName)) { ses.CustomName = c.CustomName; ses.Name = c.CustomName!; } // mirror rename
-        else if (!string.IsNullOrEmpty(c.Name)) ses.Name = c.Name;   // restore the original label
-        if (c.Flagged) ses.Flagged = true;
-        ses.Context = c.Context;   // session.context comes back with the session (P3)
+        RestoreClosedMarks(ses, c);
         RequestRedraw();
         SaveState();
     }
 
-    /// <summary>Reopen a closed workspace whole — recreate it and all its sessions (profile/cwd/name/flag).</summary>
+    /// <summary>Reopen a closed workspace whole — recreate it and all its sessions (profile/cwd/name/flag
+    /// and the control-API marks).</summary>
     private void ReopenClosedWorkspace(ClosedWorkspace c)
     {
         _closedWorkspaces.Remove(c);
@@ -1694,10 +1707,7 @@ internal partial class Program
         {
             string? cwd = !string.IsNullOrEmpty(cs.Cwd) && Directory.Exists(cs.Cwd) ? cs.Cwd : null;
             var ses = CreateSession(StableSessionId(cs.SessionId), null, cwd, ws, makeActive: false, profileName: cs.ProfileName);
-            if (!string.IsNullOrEmpty(cs.CustomName)) { ses.CustomName = cs.CustomName; ses.Name = cs.CustomName!; }
-            else if (!string.IsNullOrEmpty(cs.Name)) ses.Name = cs.Name;
-            if (cs.Flagged) ses.Flagged = true;
-            ses.Context = cs.Context;   // session.context comes back with the session (P3)
+            RestoreClosedMarks(ses, cs);
             first ??= ses;
         }
         if (first is not null) SetActive(first);

@@ -20,6 +20,7 @@ internal sealed class FakeSessionHost : ISessionHost
         public (AgentStatus Status, long ChangedAt) StatusAndChangedAt => StatusAggregate.WinnerAndChangedAt(Panes);
         public AgentStatus Status => StatusAndChangedAt.Status;
         public bool Flagged, Overlay, ReadOnly;
+        public string? Tint;
         public string? AgentResume;
         /// <summary>session.context — what the app keeps in Ses.Context. Read back through the tree,
         /// so a test asserts a set the way a caller does and a refusal the way it must: unchanged.</summary>
@@ -340,7 +341,8 @@ internal sealed class FakeSessionHost : ISessionHost
                 Axis: s.Axis,
                 PaneOverlays: s.PaneOverlayWords(), Hud: s.Hud, ForegroundShells: s.ForegroundShells,
                 PaneCwds: s.PaneIds.Select(id => s.Cwds.TryGetValue(id, out var cwd) ? cwd : "").ToList(),
-                Title: s.Title, ExitedPanes: s.PaneIds.Where(s.Exited.Contains).ToList());
+                Title: s.Title, ExitedPanes: s.PaneIds.Where(s.Exited.Contains).ToList(),
+                Tint: s.Tint);
         }).ToList(), Collapsed: w.Collapsed, DefaultDir: w.DefaultDir)).ToList();
 
     public WindowStateSnapshot WindowState() =>
@@ -975,6 +977,14 @@ internal sealed class FakeSessionHost : ISessionHost
         if (!slot.Wait) s.ClosePaneOverlay(slot);
     }
     public bool Notify(string? target, string? title, string body, NotificationCategory category) { var s = FindSes(target); if (s is null) return false; s.Notifications++; s.LastNotificationCategory = category; return true; }
+    public string SessionTint(string? target, string tint)
+    {
+        var x = FindSes(target);
+        if (x is null) return ISessionHost.RefusePrefix + SessionTints.NoSession;
+        x.Tint = tint == "clear" ? null : tint;
+        return SessionTints.Reply(x.Id, x.Tint);
+    }
+
     public bool SessionFlag(string? target, string op) { if (op == "clear") { foreach (var s in Workspaces.SelectMany(w => w.Sessions)) s.Flagged = false; return true; } var x = FindSes(target); if (x is null) return false; x.Flagged = op switch { "on" => true, "off" => false, "toggle" => !x.Flagged, _ => x.Flagged }; return true; }
     public bool SessionBind(string? target, string agent) { var s = FindSes(target); /* the app: FindPaneById, a pane, so pane-capable */ if (s is null) return false; s.AgentResume = SessionOperations.Binding(agent); return true; }
     public (string Agent, string SessionId, string? Cwd, int HookPid)? LastBindResume;

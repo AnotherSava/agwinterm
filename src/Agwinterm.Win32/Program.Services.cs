@@ -1711,6 +1711,7 @@ internal partial class Program
                         Profile = s.ProfileName,
                         Active = s.Active,
                         Flagged = s.Flagged,
+                        Tint = s.Tint,   // the surface is derived on load (SessionTints.OnFor), not stored
                         BgFile = s.BgPath is null ? null : Path.GetFileName(s.BgPath),
                         BgOpacity = s.BgOpacity,
                         BgMode = s.BgMode
@@ -1929,6 +1930,9 @@ internal partial class Program
                                 }
                             }
                     ses.Flagged = s.Flagged;
+                    // Validated, not trusted, for the same reason as Context: a hand-edited or
+                    // older state file must not put a colour the renderer cannot map on a row.
+                    ses.Tint = s.Tint is null ? null : SessionTints.NormalizeColor(s.Tint) is { } tc && tc != SessionTints.Clear ? tc : null;
                     ses.CustomName = string.IsNullOrWhiteSpace(s.CustomName) ? null : s.CustomName;
                     ses.Context = RestoreState.LoadContext(s.Context); // validated, not trusted: an out-of-rules value is dropped, not shown
                     if (!string.IsNullOrEmpty(s.BgFile)) // restore the watermark if its copied file still exists

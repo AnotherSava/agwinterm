@@ -415,6 +415,7 @@ internal partial class Program : ISessionHost, IWindowHost
         public string Axis = SplitAxes.Vertical;
         public bool Flagged;       // durable working-set flag (survives moves; persisted; drives flagged sidebar mode)
         public bool Elevated;      // shell runs at High integrity (admin) — shown with a ⚡; false for de-elevated sessions
+        public string? Tint;       // session.tint: caller-chosen sidebar colour (null = untinted; persisted). SessionTints holds the vocabulary.
         public string? CustomName; // user-renamed title (null = show the cwd/OSC title in the title bar, agterm-style)
         public string? Context;    // session.context: one line of "what is this pane for", set over the API (P3); drawn dimmed beside the name; persisted; null = none. Per session, not per pane — SessionContexts holds the rules.
         public string? ProfileName; // shell profile this session launched with (null = default; persisted)

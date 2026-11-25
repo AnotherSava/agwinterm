@@ -52,6 +52,7 @@ agwintermctl session restore "npm run dev" --target <pane>   # re-run on every r
 agwintermctl restore capture                 # capture every pane's running command into its restore slot NOW, not only at quit
 agwintermctl session rename api              # the custom name in the sidebar and title bar
 agwintermctl session context "reviewing PR 226, left pane is the diff"   # one line of what the session is FOR; survives a restart
+agwintermctl session tint purple             # colour the session NAME in the sidebar; `clear` removes it
 agwintermctl dashboard build test deploy     # grid overview of chosen sessions
 agwintermctl theme set "Tokyo Night"         # retint the whole window
 agwintermctl window new --name scratchpad    # open a second window
@@ -174,12 +175,46 @@ the common case: when the tmux session ends, the client exits and the tab stays.
 
 Each session node with an exited pane carries `exitedPanes`, an array of those pane ids. A session
 with none omits the key. The exit is observed a moment after it happens, so poll rather than reading
-it once straight after stopping a program.
+it once straight after stopping a program — and poll rather than waiting on `events`: a profile
+shell's exit emits a `tree` event, but a pane started with `session new --command` (the
+`wsl … tmux attach` case) gains `exitedPanes` with no event to wake a listener.
 
 The entries are pane ids, keyed like `paneCwds`, because `paneIds` is emitted only while a session is
 split. An unsplit session's pane id is usually the session id, but not once its original pane has been
 closed out of a split, so match against the `paneCwds` keys or treat any entry on an unsplit session
 as its one pane.
+
+## `session tint`
+
+Colours a session's name in the sidebar:
+
+```
+agwintermctl session tint <red|orange|yellow|green|blue|purple|gray|clear> [--on name] [--target ID]
+```
+
+The colour survives a relaunch and a close→reopen, and reads back from `tree --json` as `tint` on
+the session node, with `tintOn` naming the surface it paints. An untinted session omits both keys,
+and `clear` removes them rather than storing a colour that means no colour. The word is normalized,
+so `PURPLE` and `purple` are the same request; anything outside the list is refused and leaves the
+existing tint alone.
+
+The reply names the colour requested. The write itself is queued onto the UI thread, while `tree` is
+answered on the pipe thread, so a `tree` that arrives before that queue drains still reports the
+session as it was: in the same breath on a control connection held open, and — rarely, when the UI
+thread is busy saving state, painting or spawning a session — from a separate
+`agwintermctl tree --json` started right after the verb returned. Read it again rather than take the
+first read as final.
+
+The vocabulary matches agterm's verb of the same name, so one caller can drive both terminals. The
+two differ on `--on`: agterm paints the icon, the name or both, while agwinterm accepts only `name`.
+Passing `icon` is refused with its reason rather than accepted and ignored, because the two
+per-session marks in this sidebar are already spoken for — the left gutter carries the flag marker,
+and the status dot is rewritten by the agent status hooks on every tool call, so a colour put there
+would be overwritten within seconds.
+
+While a row is held under the pointer it is drawn in the washed-out drag colour instead of its tint,
+which is what marks it as moving. The stored colour is untouched, so a session keeps its tint
+through a reorder and through a move to another workspace.
 
 ## `version`
 

@@ -19,8 +19,11 @@ namespace Agwinterm.Pty;
 /// <see cref="Title"/> is
 /// the focused pane's PROGRAM title (an OSC 0/2 string, null = none), reported whether or not a
 /// custom name hides it in the chrome; <see cref="ExitedPanes"/> is the ids of the panes whose process
-/// has exited (empty = none; the tree omits the key). New optional fields go at the END: both hosts and
-/// <see cref="SingleSessionHost"/> construct this positionally.</summary>
+/// has exited (empty = none; the tree omits the key); <see cref="Tint"/> is the caller-chosen sidebar
+/// colour (null = untinted; the tree omits both <c>tint</c> and <c>tintOn</c>). The surface is not a
+/// field: <see cref="SessionTints.OnFor"/> derives it from the colour wherever it is reported.
+/// New optional fields go at the END: both hosts and <see cref="SingleSessionHost"/> construct this
+/// positionally.</summary>
 public sealed record SessionSnapshot(string Id, string Name, bool Active, AgentStatus Status,
     bool Overlay = false, int Notifications = 0, bool Flagged = false, bool Background = false,
     int FocusedPane = 0, int PaneCount = 1, bool StatusBlink = false, int OverlaySize = 0,
@@ -29,7 +32,8 @@ public sealed record SessionSnapshot(string Id, string Name, bool Active, AgentS
     string? Context = null, IReadOnlyList<string>? CapturedCommands = null,
     string? Axis = null, IReadOnlyList<string>? PaneOverlays = null, HudSpec? Hud = null,
     IReadOnlyList<string?>? ForegroundShells = null, IReadOnlyList<string>? PaneCwds = null,
-    string? Title = null, IReadOnlyList<string>? ExitedPanes = null);
+    string? Title = null, IReadOnlyList<string>? ExitedPanes = null,
+    string? Tint = null);
 
 /// <summary>A workspace (with its sessions) for the control-API tree.</summary>
 public sealed record WorkspaceSnapshot(string Id, string Name, bool Active, IReadOnlyList<SessionSnapshot> Sessions, bool Collapsed = false, string? DefaultDir = null);
@@ -530,6 +534,13 @@ public interface ISessionHost
     /// Returns false if a per-session op targets a session that isn't found; "clear" always succeeds.</summary>
     bool SessionFlag(string? target, string op);
 
+    /// <summary><c>session.tint</c>: colour the target's sidebar name. <paramref name="tint"/> is one of
+    /// <see cref="SessionTints.Colors"/>; "clear" removes it. The surface is not passed: <c>--on</c> is
+    /// validated by <see cref="SessionTints.ValidateOn"/>, which lets only <c>name</c> through, so a host
+    /// has nothing to vary on. Returns the host's reply line.</summary>
+    string SessionTint(string? target, string tint) =>
+        RefusePrefix + "session tint is unavailable in this host";
+
     /// <summary>Bind a resumable agent (e.g. "claude") to the target pane so restart re-launches it and the
     /// agent resumes its own session. <paramref name="agent"/> = "" or "none" clears the binding.
     /// Returns false if the target pane isn't found.</summary>
@@ -719,6 +730,8 @@ public sealed class SingleSessionHost : ISessionHost
          : "no overlay";
     public bool Notify(string? target, string? title, string body, NotificationCategory category) => false;
     public bool SessionFlag(string? target, string op) => false;
+    public string SessionTint(string? target, string tint) =>
+        ISessionHost.RefusePrefix + SessionTints.NoSession;
     public bool SessionBind(string? target, string agent) => false;
     public bool SessionBindResume(string? target, string agent, string sessionId, string? cwd, int hookPid) => false;
     public RestorePinTarget? SessionRestore(string target, string? command) => null;

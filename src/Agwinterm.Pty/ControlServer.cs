@@ -411,6 +411,7 @@ public sealed class ControlServer : IDisposable
                     }
                 case "session.flag":
                     return host.SessionFlag(target, GetString(args, "op") ?? "toggle") ? Ok("flag") : Err("session not found");
+                case "session.tint": return HandleSessionTint(host, target, args);
                 case "session.bind": return HandleSessionBind(host, target, args);
                 case "session.restore": return HandleSessionRestore(host, target, args);
                 // OkRaw, not Ok: Events() already returns JSON. Ok() would serialize it AGAIN, so
@@ -565,9 +566,17 @@ public sealed class ControlServer : IDisposable
                 // exitedPanes: the ids of panes whose process has exited, only when there is one. An
                 // exited pane stays on screen and its foregroundShells entry is null, which is also what
                 // a live non-shell program reports, so without this a caller waiting for a program to
-                // end cannot tell it has.
+                // end cannot tell it has. Two prose copies describe it — the `exitedPanes` section of
+                // docs/control-api.md and the tree bullet in AgentSkill.SkillMarkdown, the only one an
+                // agent outside this clone reads — and a change here has to carry both.
                 if (n.ExitedPanes is { Count: > 0 } exited)
                     sb.Append(",\"exitedPanes\":").Append(JsonSerializer.Serialize(exited));
+                // tint/tintOn: the caller-chosen sidebar colour, only on a tinted session. Both keys
+                // travel together so a reader never has to guess the surface from the colour alone.
+                if (n.Tint is { Length: > 0 })
+                    sb.Append(",\"").Append(SessionTints.Key).Append("\":").Append(JsonSerializer.Serialize(n.Tint))
+                      .Append(",\"").Append(SessionTints.OnKey).Append("\":")
+                      .Append(JsonSerializer.Serialize(SessionTints.OnFor(n.Tint)));
                 if (n.PaneCount > 1)
                 {
                     sb.Append(",\"paneCount\":").Append(n.PaneCount).Append(",\"focusedPane\":").Append(n.FocusedPane);
@@ -809,6 +818,18 @@ public sealed class ControlServer : IDisposable
             context = text;
         }
         string reply = host.SessionContext(target, context);
+        return reply.StartsWith(ISessionHost.RefusePrefix, StringComparison.Ordinal)
+            ? Err(reply[ISessionHost.RefusePrefix.Length..])
+            : OkRaw(reply);
+    }
+
+    private static string HandleSessionTint(ISessionHost host, string? target, JsonElement args)
+    {
+        string? raw = GetString(args, SessionTints.Key) ?? GetString(args, "color") ?? GetString(args, "colour");
+        if (raw is null || raw.Length == 0) return Err(SessionTints.UnknownColor);
+        if (SessionTints.NormalizeColor(raw) is not { } color) return Err(SessionTints.UnknownColor);
+        if (SessionTints.ValidateOn(GetString(args, "on")) is { } refusal) return Err(refusal);
+        string reply = host.SessionTint(target, color);
         return reply.StartsWith(ISessionHost.RefusePrefix, StringComparison.Ordinal)
             ? Err(reply[ISessionHost.RefusePrefix.Length..])
             : OkRaw(reply);

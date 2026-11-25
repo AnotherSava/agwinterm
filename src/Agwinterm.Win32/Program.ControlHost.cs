@@ -229,7 +229,8 @@ internal partial class Program
                         // a caller tracking what a user left needs what the session IS, not what some
                         // other tool called it.
                         Title: MeaningfulOscTitle(s.ActivePane),
-                        ExitedPanes: s.Panes.Where(p => p.S.HasExited).Select(p => p.Id).ToList());
+                        ExitedPanes: s.Panes.Where(p => p.S.HasExited).Select(p => p.Id).ToList(),
+                        Tint: s.Tint);
                 }).ToList()
             , Collapsed: !w.Expanded, DefaultDir: w.DefaultDir)).ToList();
     }
@@ -1282,6 +1283,23 @@ internal partial class Program
         if (ses is null) return false;
         PostVerb(() => FlagOp(ses, op));
         return true;
+    }
+
+    public string SessionTint(string? target, string tint)
+    {
+        var ses = FindSesForTarget(target);
+        if (ses is null) return ISessionHost.RefusePrefix + SessionTints.NoSession;
+        // "clear" stores null rather than the word, so every reader tests one thing (Tint is null)
+        // instead of two, and a persisted state file never carries a colour that means "no colour".
+        string? color = tint == SessionTints.Clear ? null : tint;
+        // The reply reports the colour REQUESTED, not one read back after the write: PostVerb hands
+        // the write itself to the UI thread while Tree() runs on the pipe thread under lock(_workspaces),
+        // which the queued write never takes — so ANY `tree` before the queue drains reads the session
+        // untinted, a separate agwintermctl run included, not only one in the same breath on a held
+        // connection. A session closed inside that gap is written to detached rather than refused with
+        // SessionTints.NoSession.
+        PostVerb(() => { ses.Tint = color; RequestRedraw(); SaveState(); });
+        return SessionTints.Reply(ses.Id, color);
     }
 
     // Bind (or clear) a resumable agent on a specific pane, keyed by the pane id the caller used as

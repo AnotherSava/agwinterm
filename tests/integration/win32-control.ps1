@@ -1451,6 +1451,10 @@ for ($i = 0; $i -lt 60; $i++) { & '__CTL__' session overlay resize --size-percen
             "gone=$reopenGone node=$($reopenNode | ConvertTo-Json -Compress)"
         if ($reopenNode) { Invoke-Ctl @('session', 'close', $reopenId) | Out-Null; Start-Sleep -Milliseconds 400 }
 
+        # Not covered by this suite: a session's tint over the same close -> reopen, and over a
+        # relaunch. Both were exercised by hand against a running build; `session tint` has no
+        # end-to-end case here, which CONTRIBUTING's control-verb checklist asks for.
+
         # restore.capture (P3): the slot is written NOW and the reply says, per pane, what landed;
         # `tree` reads it back under capturedCommands keyed by pane id, and the state file carries it
         # so a kill after this point still restores it. The long-lived child is ping: powershell,

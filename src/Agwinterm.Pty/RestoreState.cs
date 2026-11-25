@@ -60,6 +60,11 @@ public sealed class SessionState
     public string? Profile { get; set; }
     public int Active { get; set; }
     public bool Flagged { get; set; }
+    /// <summary>session.tint: the sidebar colour. Omitted on an untinted session, so a state file
+    /// written before tints existed reads back unchanged. The surface it paints is not stored —
+    /// <see cref="SessionTints.OnFor"/> derives it, so the two cannot disagree on disk.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Tint { get; set; }
     public List<PaneState> Panes { get; set; } = new(); public string Cwd { get; set; } = ""; public float FontSize { get; set; }
     // Wave F2: background watermark (BgFile = the copied file's name under backgrounds\; null = none).
     public string? BgFile { get; set; }

@@ -36,6 +36,17 @@ internal partial class Program
         _ => new(90 / 255f, 96 / 255f, 102 / 255f, 1f),
     };
 
+    /// <summary>
+    /// The sidebar colour for a tinted session's name, or null when it has no tint. The table — and
+    /// why it has a set per sidebar luminance — lives in <see cref="Agwinterm.Pty.SessionTints"/>,
+    /// beside the vocabulary the control API validates against, so the verb cannot accept a colour
+    /// this draws nothing for.
+    /// </summary>
+    private Color4? TintColor(Ses s) =>
+        SessionTints.Paint(s.Tint, Lum(SbBg) >= 0.5f) is { } c
+            ? new Color4(c.R / 255f, c.G / 255f, c.B / 255f, 1f)
+            : null;
+
     /// <summary>Parse "#RRGGBB" (or "#RGB") to a Color4; returns <paramref name="fallback"/> on any failure.</summary>
     private static Color4 HexColor4(string hex, Color4 fallback)
     {
@@ -200,7 +211,12 @@ internal partial class Program
         // the space the dot vacated.
         float badgeX = _sidebarW - (_config.SidebarStatusDot ? 30f : SidebarRowRightMargin) - badgeWidth;
         bool isDrag = _dragging && ReferenceEquals(s, _dragItem);
-        brush.Color = isDrag ? new Color4(0.5f, 0.53f, 0.57f, 0.45f) : (active ? SbActiveText : SbDimText);
+        // A tint replaces the name's normal colour, but never the drag ghost: while a row is being
+        // dragged its washed-out colour is what says "this one is moving", and a tint would hide that.
+        // The active row keeps the brighter mix so the selection stays readable on a tinted session.
+        brush.Color = isDrag ? new Color4(0.5f, 0.53f, 0.57f, 0.45f)
+            : TintColor(s) is { } tc ? (active ? Mix(tc, SbActiveText, 0.25f) : tc)
+            : (active ? SbActiveText : SbDimText);
         if (!ReferenceEquals(_editing, s)) // the rename box covers the name while editing
         {
             float nameRight = _sidebarW - (_config.SidebarStatusDot ? 22f : SidebarRowRightMargin);

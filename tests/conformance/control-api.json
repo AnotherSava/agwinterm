@@ -188,6 +188,30 @@
       "result": "string"
     },
     {
+      "verb": "session.tint",
+      "args": [
+        "session",
+        "tint",
+        "purple",
+        "--target",
+        "{alpha}"
+      ],
+      "result": "object",
+      "note": "FORK-LOCAL, not part of the shared floor: session.tint exists only on the agwinterm fork's `local` branch, and agliteterm has no such verb. This step and the `clear` one below belong in this file only once a lite PR implements the verb — cherry-picked upstream before then, they fail lite's contract check and its run with `unknown session command 'tint'`."
+    },
+    {
+      "verb": "session.tint",
+      "args": [
+        "session",
+        "tint",
+        "clear",
+        "--target",
+        "{alpha}"
+      ],
+      "result": "object",
+      "note": "FORK-LOCAL (see the step above); leaves {alpha} untinted for the steps that follow."
+    },
+    {
       "verb": "session.text",
       "args": [
         "session",

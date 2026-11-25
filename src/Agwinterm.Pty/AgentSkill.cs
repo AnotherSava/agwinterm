@@ -11,8 +11,11 @@ public static class AgentSkill
 {
     private static string Home => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-    public const string SkillMarkdown =
-        """
+    // Interpolated (three braces open a hole, so the JSON examples' single and double braces stay
+    // literal) because the tint vocabulary is SessionTints.Colors' to define: a palette edit has to
+    // reach the installed SKILL.md, or an agent offers colours the verb refuses.
+    public static readonly string SkillMarkdown =
+        $$$"""
         ---
         name: agwinterm
         description: Use when running inside the agwinterm terminal (env AGWINTERM_ENABLED=1) to control it — report agent status, create/switch/close sessions, type into sessions, query the session tree, and display images — via the agwintermctl CLI or its control pipe.
@@ -86,8 +89,12 @@ public static class AgentSkill
           `exitedPanes` = the ids of the panes whose process has exited, absent when none has. An exited pane
           stays on screen with a null `foregroundShells` entry, which a live non-shell program also reports,
           so this is how a caller waiting for a program to end sees that it has. The exit is observed a
-          moment after it happens. Ids as in `paneCwds`: an unsplit session's pane id is usually the session
-          id, but not after its original pane was closed out of a split.
+          moment after it happens, so poll the tree rather than waiting on `events`: a profile shell's exit
+          emits a `tree` event, but a pane started with `session new --command` (the `wsl … tmux attach`
+          case) gains `exitedPanes` with no event to wake a listener. Ids as in `paneCwds`: an unsplit
+          session's pane id is usually the session id, but not after its original pane was closed out of a split.
+          `tint` = the caller-chosen sidebar colour and `tintOn` the surface it paints, both absent on an
+          untinted session.
         - `agwintermctl events [--since CURSOR] [--limit N]`      — poll the event log (status/notification/session/tree changes); returns {cursor, events:[{seq,type,session,info}]}. Pass the returned cursor as --since next poll.
         - `agwintermctl session new [--name N] [--cwd DIR] [--workspace ID|--workspace-name NAME [--create-workspace]] [--command "PowerShell code"] [--command-mode powershell|direct] [--profile NAME] [--no-select] [--wait]`
           `--no-select` creates the session in the background without stealing focus or changing the current selection.
@@ -386,6 +393,14 @@ public static class AgentSkill
         ## Flag sessions & focus a workspace
         - `agwintermctl session flag on|off|toggle|clear [--target <id>]` — flag a session (a durable working-set
           mark shown as a flag on its sidebar row; survives moves; persists). `clear` unflags every session.
+        - `agwintermctl session tint {{{SessionTints.ColorWords}}} [--on name] [--target <id>]`
+          — colour a session's NAME in the sidebar (persists; reads back as `tint`/`tintOn` on the tree node, a moment
+          after the reply — the write is queued onto the UI thread, so re-read `tree` if it still looks unset).
+          `clear` removes it. The vocabulary matches agterm's verb so one caller drives both terminals, but
+          `--on icon` is refused here: the left gutter is the flag marker's and the status dot is rewritten by
+          the status hooks, so a colour put there would not survive. Status is NOT this — keep reporting it
+          with `session status`, which owns the dot; a tint is for something about the session that does not
+          change as you work.
         - `agwintermctl sidebar mode tree|flagged|toggle`        — switch the sidebar between the workspace tree
           and a flat list of just the flagged sessions (great for a curated working set across workspaces).
         - `agwintermctl workspace focus on|off|toggle`           — show only the active workspace in the tree
