@@ -23,9 +23,18 @@ name its own pane. Matching a pane by its project directory is what `tree`'s `pa
 for, added on `local`; upstream still reports no cwd, which is what #353 asks for. Labelling a
 session from outside goes through the OSC title instead ([[agwinterm-session-title-route]]).
 
+**`--target` rides on the root of the request, not inside `args`.** Measured 2026-11-24 while
+testing a new verb: `ControlServer` reads `target` off the request object itself, so a raw pipe
+request that nests it in `args` is accepted and silently addresses the *active* session. A test
+written that way passes while proving nothing. The `agwintermctl` CLI puts it in the right place,
+so this only bites a caller writing JSON by hand.
+
 Two smaller ones from the same session: `session text` can come back empty for a pane that is not
 the active one, so an empty buffer is not evidence the pane is dead — check for a live shell
-process instead. And `tree` is already JSON, so passing `--json` makes it fail.
+process instead. And `tree --json` is a real flag (`CtlUsage.Long` lists it, and it was run on
+0.20.13.3 on 2026-11-24): it wraps the payload in the `{"ok":…,"result":…}` envelope, where bare
+`tree` prints the result alone. An earlier note here claiming `--json` makes `tree` fail was
+wrong.
 
 **`config get <unknown-key>` prints nothing and exits 0.** Measured 2026-10-03. There is no
 refusal, so an unknown key is indistinguishable from a key whose value is empty. The useful half
