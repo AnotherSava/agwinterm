@@ -3,7 +3,7 @@
 
 #define AppName    "agwinterm"
 ; A fourth component marks a build from the local fork; upstream releases carry three.
-#define AppVersion "0.20.13.3"
+#define AppVersion "0.20.13.4"
 #define AppExe     "Agwinterm.Win32.exe"
 #define AppPublisher "Boris Kudriashov"
 ; The main app defaults new sessions to the Rust pty-host as a first-run seed only (it never
