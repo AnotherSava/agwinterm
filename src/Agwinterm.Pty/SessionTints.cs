@@ -68,8 +68,9 @@ public static class SessionTints
     /// the stored value, so <c>clear</c> and a name this build does not know both answer null and
     /// leave the row in its ordinary colour.
     /// A hex tint ignores <paramref name="onLight"/>: it is the literal colour the caller asked
-    /// for, which is what agterm does too, so unlike a palette name it does not re-pick itself for
-    /// the theme and a hex chosen against one sidebar can read poorly against the other.
+    /// for, so unlike a palette name it does not re-pick itself for the theme, and a hex chosen
+    /// against one sidebar can read poorly against the other. agterm is read from its source as
+    /// doing the same; that one is unmeasured, since <c>tree</c> cannot show what a row painted.
     /// </summary>
     public static Rgb? Paint(string? tint, bool onLight)
     {
