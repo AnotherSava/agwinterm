@@ -1448,15 +1448,62 @@ internal partial class Program : ISessionHost, IWindowHost
         _brush = _rt.CreateSolidColorBrush(new Color4(1f, 1f, 1f, 1f));
     }
 
-    /// <summary>Grid size for the content region using the given font size's cell metrics.</summary>
+    // Client extent (DIP) as last seen while the window was really on screen, for GridSizeFor.
+    // The CLIENT extent, not the content box: the sidebar is subtracted at read time, so a collapse
+    // or a `sidebar width` while minimized still sizes a new pane for the sidebar it will have.
+    private int _shownClientW, _shownClientH;
+
+    /// <summary>Remember the client extent while the window is on screen. Called from every WM_SIZE
+    /// (so a resize, maximize, restore or DPI change cannot leave the value behind) and from
+    /// <see cref="GridSizeFor"/>, which keeps the value current for a caller that runs between two
+    /// size messages. That second call is also what gives a boot pane a correctly scaled value, so
+    /// do not drop it. The WM_SIZE raised inside CreateWindowExW does reach here — the WindowProc
+    /// trampoline (Program.WndProc.cs) assigns <c>_hwnd</c> on the first message of creation — but
+    /// what it stores is DEVICE pixels: <c>_dpi</c> still holds its 96f field default until
+    /// CreateRenderTarget, which Boot calls after CreateWindowExW, so ClientW/ClientH's ToDip is
+    /// the identity at that moment and the seed is a scale factor too large (1.5x on a 150%
+    /// display). It becomes a DIP extent at the next call: GridSizeFor's own, or the WM_SIZE from
+    /// the SWP_FRAMECHANGED and the ShowWindow that follow CreateRenderTarget in Boot. A correctly
+    /// scaled seed is still not the shown extent when the saved state is maximized (or a
+    /// <c>--maximized</c> launch): it is the smaller restore rect, and the SW_MAXIMIZE that follows
+    /// raises its own WM_SIZE, after which RegridAllSessions resizes those panes to the maximized
+    /// grid. The same trampoline makes the <c>_hwnd == IntPtr.Zero</c> test a GetClientRect(0)
+    /// backstop no current caller reaches.</summary>
+    private void NoteShownClientExtent()
+    {
+        if (_hwnd == IntPtr.Zero || IsIconic(_hwnd)) return;
+        int w = ClientW(), h = ClientH();
+        if (w > 0 && h > 0) (_shownClientW, _shownClientH) = (w, h);
+    }
+
+    /// <summary>Grid size for the content region using the given font size's cell metrics.
+    /// While the window is minimized this answers the grid the content WOULD have if shown,
+    /// never the one its off-screen stub rect gives — see the comment inside.</summary>
     private (int cols, int rows) GridSizeFor(float px)
     {
         var (_, cw, ch) = Metrics(px);
-        GetClientRect(_hwnd, out RECT rc);
-        int w = rc.right - rc.left, h = rc.bottom - rc.top;
-        int cols = Math.Max(1, (int)((w - _sidebarW - 2 * PadX) / cw));
-        int rows = Math.Max(1, (int)((h - TitleBarH - 2 * PadY) / ch));
-        return (cols, rows);
+        NoteShownClientExtent();
+        // ContentArea, not GetClientRect: it is the layout's own box, in DIPs. Measuring the device
+        // pixels here instead put a new pane's grid a scale factor out on a HiDPI screen (375x101
+        // where the window showed 241x67), which RegridSession then corrected on the first paint —
+        // so only a pane that was never shown kept the wrong size.
+        var (_, _, w, h) = ContentArea();
+        // A minimized window reports its off-screen stub rect, not 0x0: the custom frame makes the
+        // client rect the window rect (AdjustClientRect, Program.Chrome.cs, insets only when zoomed),
+        // and that stub measured 158x26 device px. ContentAreaFor subtracts the sidebar and the title
+        // bar from it and floors the remainder at 1 DIP, which the Math.Max(1, ...) below would turn
+        // into a "valid" 1x1 grid — so the test below is a smallness test on the content box, which
+        // a nonzero stub needs, not a zero test. RegridSession guards that trap by
+        // skipping while iconic, but CREATION cannot skip: the pty is sized once here and the next
+        // regrid only arrives with a WM_SIZE, so a session created while the window was minimized
+        // stayed 1x1 for as long as it stayed minimized, and a TUI drew nothing into the one cell.
+        // A control-API client creating a session it does not select (`session.new --no-select`) is
+        // that case; the 1x1 was measured in it — a new session at cols 1 rows 1 while a shown tab
+        // had 241x67. The remembered client extent is what the window had when it was last on
+        // screen, which is what it gets back when it is restored.
+        if ((w < cw || h < ch) && _shownClientW > 0)
+            (_, _, w, h) = ContentAreaFor(_shownClientW, _shownClientH);
+        return (Math.Max(1, (int)(w / cw)), Math.Max(1, (int)(h / ch)));
     }
 
     private (int cols, int rows) GridSize() => GridSizeFor(ActiveFontSize());

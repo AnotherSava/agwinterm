@@ -263,6 +263,12 @@ internal partial class Program
                 }
 
             case WM_SIZE:
+                // Outside the render-target branch: a pane created while the window is minimized is
+                // sized from this remembered extent, so it has to follow every size the window
+                // takes — the boot SW_MAXIMIZE included, which arrives after the restored panes
+                // already seeded it from the smaller restore rect — whether or not there is a
+                // surface to resize at the time.
+                NoteShownClientExtent();
                 if (_rt is not null)
                 {
                     int w = LoWord(lParam), h = HiWord(lParam);

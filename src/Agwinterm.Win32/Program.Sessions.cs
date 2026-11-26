@@ -496,11 +496,18 @@ internal partial class Program
     // ---- Pane layout ----
 
     /// <summary>Content region (px) available to the terminal, right of the sidebar and below the title bar.</summary>
-    private (float x0, float y0, float w, float h) ContentArea()
+    private (float x0, float y0, float w, float h) ContentArea() => ContentAreaFor(ClientW(), ClientH());
+
+    /// <summary>Content region for a given client extent. <see cref="ContentArea"/> above passes the
+    /// window's current one; the only caller passing a different extent is <see cref="GridSizeFor"/>,
+    /// sizing a pane from the last on-screen extent while the window is minimized. The subtraction
+    /// lives here alone, so there is one definition of where the content box sits inside the client
+    /// area.</summary>
+    private (float x0, float y0, float w, float h) ContentAreaFor(float clientW, float clientH)
     {
         float x0 = _sidebarW + PadX, y0 = TitleBarH + PadY;
-        float w = MathF.Max(1f, ClientW() - _sidebarW - 2 * PadX);
-        float h = MathF.Max(1f, ClientH() - TitleBarH - 2 * PadY);
+        float w = MathF.Max(1f, clientW - _sidebarW - 2 * PadX);
+        float h = MathF.Max(1f, clientH - TitleBarH - 2 * PadY);
         return (x0, y0, w, h);
     }
 
@@ -560,11 +567,12 @@ internal partial class Program
 
     /// <summary>Resize every pane's PTY grid to fit its box along the session's axis (a column of a
     /// vertical split, a row of a horizontal one), using the pane's own font metrics.
-    /// Does nothing while the window has no usable client area — see the guard.</summary>
+    /// Does nothing while the window is minimized — see the guard.</summary>
     private void RegridSession(Ses ses)
     {
-        // A minimized window's client rect is 0x0, and ContentArea() floors that with
-        // MathF.Max(1f, ...) — so the layout comes back as a 1-PIXEL column that looks valid.
+        // A minimized window's client rect is its off-screen stub (measured 158x26 device px), and
+        // ContentArea() floors that with MathF.Max(1f, ...) — so the layout comes back as a
+        // 1-PIXEL column that looks valid.
         // Regridding from it resized the PTY to 1x1 and ConPTY reflowed every line to a single
         // character: that is the "Claude Code renders 1 char per line after I come back and switch
         // sessions" report, and the blank PowerShell prompt that needed an Enter to redraw. Two
