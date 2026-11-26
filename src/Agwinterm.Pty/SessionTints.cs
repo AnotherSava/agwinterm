@@ -62,8 +62,9 @@ public static class SessionTints
     /// leave the row in its ordinary colour.
     /// A hex tint ignores <paramref name="onLight"/>: it is the literal colour the caller asked
     /// for, so unlike a palette name it does not re-pick itself for the theme, and a hex chosen
-    /// against one sidebar can read poorly against the other. agterm is read from its source as
-    /// doing the same; that one is unmeasured, since <c>tree</c> cannot show what a row painted.
+    /// against one sidebar can read poorly against the other. agterm paints a hex literally too:
+    /// measured 2026-11-26 on agterm's dark sidebar, a name tinted #ff00ff drew as exactly that
+    /// sRGB colour. Its light sidebar is read from source only.
     /// </summary>
     public static Rgb? Paint(string? tint, bool onLight)
     {
