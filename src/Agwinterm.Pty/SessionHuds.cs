@@ -61,10 +61,11 @@ public static class SessionHuds
         foreach (string key in new[] { "color", "text-color" })
         {
             if (!values.TryGetValue(key, out string? color)) continue;
-            string digits = color.StartsWith('#') ? color[1..] : color;
-            if (digits.Length != 6 || !digits.All(char.IsAsciiHexDigit))
-            { error = "hud: " + key + " must be #rrggbb"; return false; }
-            values[key] = "#" + digits.ToLowerInvariant();
+            // HexColor, not a second rule here: the session tint decides what a hex is in the same
+            // place, so the two verbs cannot drift on what they accept or on how they store it.
+            if (HexColor.Normalize(color) is not { } hex)
+            { error = "hud: " + key + " must be " + HexColor.Word; return false; }
+            values[key] = hex;
         }
         spec = new(message.Normalize(), string.IsNullOrEmpty(detail) ? null : detail.Normalize(), spinner,
             values.GetValueOrDefault("color"), values.GetValueOrDefault("text-color"), width, position);

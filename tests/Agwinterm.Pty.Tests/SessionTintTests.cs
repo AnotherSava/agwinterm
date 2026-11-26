@@ -242,8 +242,8 @@ public class SessionTintTests
     {
         // ColorWords is what the CLI's refusal and the agent skill spell out; a hex accepted by
         // the verb and absent from that string is a colour no caller learns it may pass.
-        Assert.Contains(SessionTints.HexWord, SessionTints.ColorWords);
-        Assert.Contains(SessionTints.HexWord, SessionTints.UnknownColor);
+        Assert.Contains(HexColor.Word, SessionTints.ColorWords);
+        Assert.Contains(HexColor.Word, SessionTints.UnknownColor);
     }
 
     [Fact]

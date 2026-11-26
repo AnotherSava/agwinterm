@@ -534,8 +534,10 @@ public interface ISessionHost
     /// Returns false if a per-session op targets a session that isn't found; "clear" always succeeds.</summary>
     bool SessionFlag(string? target, string op);
 
-    /// <summary><c>session.tint</c>: colour the target's sidebar name. <paramref name="tint"/> is one of
-    /// <see cref="SessionTints.Colors"/>; "clear" removes it. The surface is not passed: <c>--on</c> is
+    /// <summary><c>session.tint</c>: colour the target's sidebar name. <paramref name="tint"/> has been
+    /// through <see cref="SessionTints.NormalizeColor"/>, so it is one of <see cref="SessionTints.Colors"/>
+    /// or a normalized <see cref="HexColor"/> — which is deliberately not in that array, so a host that
+    /// validates against it would drop every hex; "clear" removes the tint. The surface is not passed: <c>--on</c> is
     /// validated by <see cref="SessionTints.ValidateOn"/>, which lets only <c>name</c> through, so a host
     /// has nothing to vary on. Returns the host's reply line.</summary>
     string SessionTint(string? target, string tint) =>
