@@ -35,6 +35,15 @@ matters because the silent setup closes agwinterm through Restart Manager, which
 take the invoking shell with it; the helper then relaunches the app only if it was already
 running. It logs beside the setup exe under the gitignored output folder.
 
+**That wrapper is kept deliberately, not left behind.** Convention 017 moves a project's deploy
+settings into a committed `config/deploy.env` and deletes the per-machine wrapper, but it is marked
+`optional: forks`, and declining is right here: the shared `dotnet` target the convention's
+`DEPLOY_TYPE` would select looks for a single `src/*.csproj` and finds none (the projects sit in
+`src/Agwinterm.Win32/` and its siblings), and it knows nothing of the Inno Setup compile, the
+detached install or the relaunch this wrapper does. Committing a `config/deploy.env` would also add
+a file to yeroo's tree. The record is still `12`, and `conventions/engine.py` refuses to decline a
+version it has not walked to, so recording the decline needs `/adopt` through 13-16 first.
+
 **`AppVersion` in `installer/agwinterm.iss` is the single source of the version** — the installer
 filename, the Inno metadata and `-p:Version` for both publishes all come from it, and
 `agwintermctl ping` reports what it stamped. A fourth component marks a fork build (upstream
@@ -42,8 +51,8 @@ releases carry three). A SemVer `+local` suffix does **not** work: Inno rejects 
 `VersionInfoVersion`, which must be numeric, even though MSBuild tolerates it.
 
 **The fourth part counts local installs and restarts at `.1` on every new upstream release.**
-`0.20.13.1` → `.2` → `.3` are three builds installed on this machine off the same upstream
-`0.20.13`; when upstream ships `0.20.14` the next fork build is `0.20.14.1`, not `.4`. Two things
+`0.20.13.1` through `0.20.13.6` are the builds installed on this machine off the same upstream
+`0.20.13`; when upstream ships `0.20.14` the next fork build is `0.20.14.1`, not `.7`. Two things
 follow. The fourth part is also what keeps the update check permanently blind
 ([[agwinterm-fork-update-check-blind]]), so the line can never be dropped to "match upstream".
 And `installer/agwinterm.iss` carries a fork-only edit on a line upstream also edits every
