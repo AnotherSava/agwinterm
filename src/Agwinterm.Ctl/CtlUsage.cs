@@ -17,8 +17,10 @@ public static class CtlUsage
     /// <summary>The one-line summary printed with no arguments at all.</summary>
     public const string Short = "usage: agwintermctl <ping|version|tree|session|surface|image|install> ... (see docs/control-api.md)";
 
-    /// <summary>Every verb and flag, the text <c>--help</c> prints. Moved here from the comment it
-    /// used to be; keep it and the code in step, because this is now what users read.</summary>
+    /// <summary>The text <c>--help</c> prints: the verbs a script drives a session with, spelled out
+    /// flag by flag. A SUBSET of the CLI — the families it leaves out are named in its own last
+    /// paragraph, so a reader is not told the list is complete. Moved here from the comment it used
+    /// to be; keep it and the code in step, because this is now what users read.</summary>
     public const string Long = """
         agwintermctl — drive agwinterm's control API from the shell (agterm's agtermctl analog).
         Usage:
@@ -62,6 +64,11 @@ public static class CtlUsage
           agwintermctl session context --stdin [--target ID]      (text = stdin, one trailing newline dropped; an
               embedded newline is then refused — the context is one line)
           agwintermctl session seen [--target ID]        (clear the unseen-notification badge)
+          agwintermctl session tint <colour|clear> [--on name] [--target ID]   (colour the session's sidebar
+              name; `session tint` with no colour prints the accepted words — the palette, plus a #rrggbb
+              hex, which is painted exactly as given while a palette name re-picks itself for a light or a
+              dark sidebar. --on takes only `name` here: `icon` is refused, the left gutter being the flag
+              marker's. Read back in `tree --json` as tint/tintOn; survives a restart)
           agwintermctl notify <body...> [--title TITLE] [--category ok|normal|attention] [--target ID]
               (untyped notifications default to attention; badge priority: attention > normal > ok)
           agwintermctl sidebar state                      (read-back: "visible tree 220" = visibility, mode, width)
@@ -127,6 +134,12 @@ public static class CtlUsage
         Target defaults to $AGWINTERM_SESSION_ID (the current session) when not given.
         --timeout <seconds> bounds the wait for the app's reply (default 30, 0 = no limit; a
             `session overlay open --block` waits for its overlay without a limit unless given).
+        Not every verb is above. Left out here: the workspace, window, command, claude, app, theme,
+            keymap, profiles, config, settings, font, dashboard, omp, events, broadcast, quick and
+            pick families, `install skill|shell|cli`, and the session verbs duplicate, output, go,
+            move, search, readonly, scratch, flag, bind, background and switch. docs/control-api.md
+            documents most of those; what the CLI takes in full is the switch in its own Program.cs,
+            plus `pick`, which that file answers ahead of the switch.
         """;
 
     /// <summary>

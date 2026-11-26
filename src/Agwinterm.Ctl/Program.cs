@@ -3,9 +3,11 @@ using System.Text.Json;
 using Agwinterm.Pty;
 
 // agwintermctl — drive agwinterm's control API from the shell (agterm's agtermctl analog).
-// Every verb and flag is in CtlUsage.Long, which `--help` prints. It used to be a 96-line comment
-// right here that nothing printed, while Help.cs told users to run `agwintermctl --help` — a flag
-// this CLI did not have. One copy, and it is the one users read.
+// The usage text `--help` prints is CtlUsage.Long, which spells out the session-driving verbs and
+// names the families it leaves out; the full set is the switch below plus the `pick` arm ahead of
+// it, which hands off to PickCli. It used to be a 96-line comment right here that nothing printed,
+// while Help.cs told users to run `agwintermctl --help` — a flag this CLI did not have. One copy,
+// and it is the one users read.
 
 // Before any output, PickCli's included: a REDIRECTED stream gets the UTF-8 the control pipe
 // speaks; a console keeps its own code page. See CtlStdout for why not Console.OutputEncoding.
