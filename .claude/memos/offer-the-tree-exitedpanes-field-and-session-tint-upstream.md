@@ -30,3 +30,13 @@ has been offered.
 3. **`session tint` has no `tests/integration/win32-control.ps1` case** — the suite says so outright.
    CONTRIBUTING wants one for a control-API change, and the pwsh suite has never been run on this
    machine.
+
+## Also unoffered: the minimized-creation fix, which is item 4 of #332
+
+`fix(win32): size a new pane from the content box` is not a fork feature — it answers item 4 of
+yeroo's own open issue #332, whose acceptance criteria match what was measured here (a session
+created while the window is minimized came up 1x1 and a TUI drew nothing into the one cell). So this
+one needs no issue of its own and no "is this wanted" conversation; the issue is the conversation.
+Items 1-3 of #332 — window-state reporting on `tree`, a `surface size` verb, and
+`window restore --no-activate` — are untouched here, so a PR would close part of the issue only, and
+should say which part.
