@@ -7,4 +7,4 @@
 - [Deploy takes the machine](agwinterm-deploy-takes-the-machine.md) — `scripts/deploy.sh` closes the terminal the user works inside; ask every time, with the ~10s duration
 - [The update check is blind here](agwinterm-fork-update-check-blind.md) — the fork's fourth version part makes agwinterm always say it is up to date; ask git about upstream, not the palette
 - [Rename gestures](agwinterm-rename-gestures.md) — F2 renames only the active session; a workspace row needs double-click or right-click → Rename
-- [Claude drawn at 80 columns](claude-80-column-frame.md) — open bug, not agwinterm's; dotfiles now sizes tmux at creation (e721f9e), so a recurrence after a reboot means another cause
+- [Claude drawn at 80 columns](claude-80-column-frame.md) — open bug, not agwinterm's; tmux ignores new-session -x/-y while a client is attached, so e721f9e's sizing was weaker than thought

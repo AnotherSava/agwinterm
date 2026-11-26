@@ -4,7 +4,7 @@ description: "Open since 2026-10-09 — Claude panes sometimes draw at 80 column
 metadata:
   node_type: memory
   type: project
-  modified: 2026-10-11T18:11:40.167Z
+  modified: 2026-11-26T06:21:35.000Z
 ---
 
 Claude Code in a `cc-*` tmux session sometimes keeps drawing at 80 columns while its tmux pane
@@ -33,8 +33,22 @@ any `cc-*` session, and the 2026-10-11 reattach was 241→241 with no resize. Th
 another occurrence. A check that needs no screen: the width of the last `─{20,}` run in
 `tmux capture-pane -p` is 80 in a stuck pane. Fixed by `resize-window -x 240` then `-A`.
 
-**Remedy in place since 2026-10-11** (dotfiles e721f9e): `remote_session_create` in the dotfiles
-repo's `claude/remote-session/lib.sh` creates each session at the terminal's size from `stty size`,
-and both `start-here.sh` and `cc-session.sh` call it. Only tested against a private tmux server, not
-yet on a real Claude session after a reboot. A recurrence after that means this was not the cause;
-the dotfiles memory `project_claude_80_column_frame.md` tracks the same bug.
+**Remedy since 2026-10-11, weaker than it looked** (dotfiles e721f9e): `remote_session_create` in
+the dotfiles repo's `claude/remote-session/lib.sh` creates each session at the terminal's size from
+`stty size`, and both `start-here.sh` and `cc-session.sh` call it. Measured on tmux 3.4 on
+2026-11-25 by the dotfiles session: `new-session -d -x C -y R` ignores -x/-y while any client is
+attached to the server. The window takes the size of the most recently active client and the flags
+only set the session's default-size (asked for 80x5 it came up 1x1 behind a background agwinterm
+tab; asked for 120x40 it came up 147x51). With no client attached the flags do size the window;
+80x24 comes only from a new-session given no -x/-y. So
+e721f9e never sized the window when a client was attached, and a recurrence does not rule out the
+creation path. The dotfiles fix since 2026-11-25 is `resize-window -x C -y R` followed by
+`set-option -wu window-size`, which holds the size and still lets the next attach resize it; details
+in the dotfiles learnings file `wsl-tmux-from-git-bash.md`, window-size section. The dotfiles
+memory `project_claude_80_column_frame.md` tracks the same bug.
+
+**Log lines in `~/tmux-size.log` that are not the bug** (2026-11-25, local time UTC-07:00):
+`probe-claude-x`, `-y`, `-z`, `-w` and `-c` around 18:44–18:46 are hand-run sizing tests; earlier
+that evening the shepherd ran `resize-window -t cc-trips -x 147 -y 51` then `-A`; any
+`liveness-probe-<pid>` CREATED/WINDOW lines come from `cc-session.sh`'s check, which now resizes
+them to 80x5 right after creation.
